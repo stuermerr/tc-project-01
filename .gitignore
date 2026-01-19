@@ -38,3 +38,7 @@ venv/
 .DS_Store
 .vscode/
 .cursor/
+
+# docs
+*.md
+!README.md
