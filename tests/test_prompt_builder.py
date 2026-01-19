@@ -1,4 +1,4 @@
-from app.core.models import RequestPayload
+from app.core.dataclasses import RequestPayload
 from app.core.prompt_builder import build_messages
 from app.core.prompts import get_prompt_variants
 

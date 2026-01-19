@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.core.models import PromptVariant
+from app.core.dataclasses import PromptVariant
 
 
 _PROMPT_VARIANTS = [

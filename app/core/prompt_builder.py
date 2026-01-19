@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.core.models import PromptVariant, RequestPayload
+from app.core.dataclasses import PromptVariant, RequestPayload
 
 
 def _normalize_field(text: str) -> str:
