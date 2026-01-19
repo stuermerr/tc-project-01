@@ -1,7 +1,7 @@
 # PROGRESS_TRACKING.md - Decisions, progress, and next steps
 
 ## Current milestone
-- Step 6 complete: controller orchestration
+- Step 8 complete: integration tests + docs
 
 ## Decisions log
 | Date | Decision | Rationale | Impact |
@@ -13,6 +13,8 @@
 | 2026-01-19 | Implemented Step 4 OpenAI client wrapper (default gpt-4o-mini) | Enable model calls with temperature control | Ready for response formatter |
 | 2026-01-19 | Implemented Step 5 response formatter | Enforce response contract + question count | Ready for controller orchestration |
 | 2026-01-19 | Implemented Step 6 controller orchestration | Wire safety, prompt building, LLM, formatter | Ready for Streamlit UI |
+| 2026-01-19 | Implemented Step 7 Streamlit UI | Single-page inputs + generate flow | Ready for integration tests |
+| 2026-01-19 | Implemented Step 8 integration test + README update | End-to-end coverage and run instructions | Sprint 1 MVP complete |
 
 ## Open questions
 - None currently.
@@ -28,4 +30,5 @@
 - [x] Implement PLAN Step 4: OpenAI client wrapper
 - [x] Implement PLAN Step 5: response formatter (contract enforcement)
 - [x] Implement PLAN Step 6: controller orchestration
-- [ ] Implement PLAN Step 7: Streamlit UI single-page app
+- [x] Implement PLAN Step 7: Streamlit UI single-page app
+- [x] Implement PLAN Step 8: Integration tests + docs

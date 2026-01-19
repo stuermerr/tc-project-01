@@ -31,6 +31,12 @@ cp .env.example .env
 # edit .env and set OPENAI_API_KEY=...
 
 streamlit run app/ui/streamlit_app.py
+```
+
+## Run tests
+```bash
+pytest -q
+```
 
 
 ## Repo navigation
@@ -45,6 +51,6 @@ RULES.md — operational rules snapshot
 
 ARCHITECTURE.md — architecture snapshot
 
-progress_tracking.md — decisions + next steps
+PROGRESS_TRACKING.md — decisions + next steps
 
 FAILED-DEV-INSIGHTS.md — post-mortems after failed attempts
