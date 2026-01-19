@@ -5,55 +5,25 @@ This file is the **single source of truth** for how AI assistants should help in
 ---
 
 ## 1) Project purpose
-We build a **Guided Expert Chat** application.
+See `REQUIREMENTS.md` for the stable reference of the project description.
 
-- **Sprint 1 submission framing:** *Interview Practice App* (profile: `interview`).
-- **Long-term direction:** pivot to a reliable **Legal-Tech** assistant (profile: `legal_employment`).
-- The codebase stays **domain-agnostic**: no domain logic hardcoded outside profile files.
-
----
-
-## 2) Sprint 1 scope (must-have)
-- Single-page UI (Streamlit by default)
-- OpenAI API call using one of the allowed models:
-  - GPT-4.1 / GPT-4.1 mini / GPT-4.1 nano / GPT-4o / GPT-4o mini
-- At least **5 system prompt variants** using different prompting techniques
-- Tune at least one model setting (temperature or top_p)
-- Add at least one **security guard**:
-  - input validation
-  - prompt injection defense
-  - refusal templates
-
-Non-goals for Sprint 1:
-- RAG
-- tools/function calling
-- agents
-- long-term memory
-- deployment
-
----
+## 2) Rules snapshot
+See `RULES.md` for the stable reference of rules to comply.
 
 ## 3) Architecture snapshot
 See `ARCHITECTURE.md` for the stable reference.
 
-Core abstractions:
-- **Profile** = domain configuration (UI fields, prompt variants, safety policy, feature toggles)
-- **Pipeline** = “how we answer”
-  - Sprint 1: PromptOnlyPipeline
-  - Sprint 2: RAGPipeline
-  - Sprint 3: ToolCallingPipeline, AgentPipeline
-
----
 
 ## 4) Repo map
 - `AGENTS.md` — canonical assistant instructions (this file)
 - `rules.md` — operational rules for coding sessions
-- `requirements.md` — scope + definition of done
+- `requirements.md` — scope + definition of project
 - `PLAN.md` — stepwise implementation plan
-- `progress_tracking.md` — decisions + next steps + open questions
-- `feature-dev-failed-insights.md` — post-mortems after failed attempts
+- `progress_tracking.md` — decisions + steps already done successfully + next steps + open questions
+- `feature-dev-failed-insights.md` — post-mortem feature development insights to after failed attempts to prevent trying the same implementation approach again and learn from failed approaches.
 
----
+
+
 
 ## 5) Environment & tools
 Assumptions (update as needed):
@@ -157,3 +127,11 @@ If a feature attempt fails:
 - Use **agent mode** only for small, mechanical tasks (e.g., implement Step N exactly).
 - If the assistant starts asking many follow-ups that do not change the outcome, ask it to **consolidate into docs**.
 - Always review diffs and run tests before committing.
+
+
+Non-goals for this project:
+- RAG
+- tools/function calling
+- AI agents
+- long-term memory
+- deployment
