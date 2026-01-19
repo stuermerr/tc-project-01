@@ -1,12 +1,13 @@
 # PROGRESS_TRACKING.md - Decisions, progress, and next steps
 
 ## Current milestone
-- Setting up .md files for AI Agent Assisted Coding
+- Step 1 complete: core models + prompt variants
 
 ## Decisions log
 | Date | Decision | Rationale | Impact |
 |------|----------|-----------|--------|
 | 2025-09-09 | Standardized PROGRESS_TRACKING.md usage + aligned docs | Keep project docs consistent and actionable | Clearer onboarding and next steps |
+| 2026-01-19 | Implemented Step 1 core models + prompt variants | Establish typed interfaces and prompt set | Unblocked safety guard and prompt builder steps |
 
 ## Open questions
 - Which OpenAI model to use by default (gpt-4o-mini recommended for cost)?
@@ -16,4 +17,5 @@
 - Keep entries concise and dated when practical.
 
 ## Next steps
-- [ ] Start Implementation: Implement PLAN Step 1
+- [x] Implement PLAN Step 1: core models + prompt variants
+- [ ] Implement PLAN Step 2: safety guard (validation + injection heuristics)
