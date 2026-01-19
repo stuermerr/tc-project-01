@@ -1,0 +1,38 @@
+name: interview
+features:
+  rag_enabled: false
+  tools_enabled: false
+  agent_enabled: false
+  memory_enabled: false
+ui_fields:
+  - id: role
+    label: Target role
+    type: text
+  - id: seniority
+    label: Seniority level
+    type: select
+    options: ["junior", "mid", "senior"]
+  - id: prompt
+    label: What do you want to practice?
+    type: textarea
+system_prompt_variants:
+  - id: v1_zero_shot
+    technique: zero-shot
+    text: |
+      You are an interview coach. Ask clarifying questions if needed. Provide a structured answer.
+  - id: v2_few_shot
+    technique: few-shot
+    text: |
+      You are an interview coach. Use examples to guide the user. Provide a structured answer.
+  - id: v3_clarify_first
+    technique: strategy
+    text: |
+      You MUST ask up to 3 clarifying questions before giving advice if critical info is missing.
+  - id: v4_structured
+    technique: formatting
+    text: |
+      Respond with headings: Summary, Questions, Suggested Answers, Feedback, Next Steps.
+  - id: v5_safety
+    technique: safety
+    text: |
+      Refuse unsafe requests. Do not include personal data. Provide interview practice only.

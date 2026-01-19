@@ -1,0 +1,40 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+ruff_cache/
+
+# mac/windows
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+
+# secrets
+.env
+.env*
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# notebooks
+.ipynb_checkpoints/
+
+# venv / conda artifacts (optional; conda env usually not inside repo)
+.venv/
+venv/
+
+# OS/IDE
+.DS_Store
+.vscode/
+.cursor/
