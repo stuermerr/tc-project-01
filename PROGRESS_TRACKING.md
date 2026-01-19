@@ -1,13 +1,15 @@
 # PROGRESS_TRACKING.md - Decisions, progress, and next steps
 
 ## Current milestone
-- Step 1 complete: core models + prompt variants
+- Step 3 complete: prompt assembler
 
 ## Decisions log
 | Date | Decision | Rationale | Impact |
 |------|----------|-----------|--------|
 | 2025-09-09 | Standardized PROGRESS_TRACKING.md usage + aligned docs | Keep project docs consistent and actionable | Clearer onboarding and next steps |
 | 2026-01-19 | Implemented Step 1 core models + prompt variants | Establish typed interfaces and prompt set | Unblocked safety guard and prompt builder steps |
+| 2026-01-19 | Implemented Step 2 safety guard | Enforce length limits + prompt injection checks | Ready for prompt builder integration |
+| 2026-01-19 | Implemented Step 3 prompt builder | System+user message assembly with consistent fields | Ready for OpenAI client wrapper |
 
 ## Open questions
 - Which OpenAI model to use by default (gpt-4o-mini recommended for cost)?
@@ -18,4 +20,6 @@
 
 ## Next steps
 - [x] Implement PLAN Step 1: core models + prompt variants
-- [ ] Implement PLAN Step 2: safety guard (validation + injection heuristics)
+- [x] Implement PLAN Step 2: safety guard (validation + injection heuristics)
+- [x] Implement PLAN Step 3: prompt assembler
+- [ ] Implement PLAN Step 4: OpenAI client wrapper
