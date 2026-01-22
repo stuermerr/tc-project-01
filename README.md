@@ -1,8 +1,8 @@
-# Sprint 1 — Interview Practice App (Streamlit + OpenAI)
+# 🧩 Sprint 1 — Interview Practice App (Streamlit + OpenAI)
 
 A single-page Streamlit app that generates **5 tailored interview questions (English)** using an OpenAI model, based on an optional **job description**, optional **CV text**, and an optional **user prompt**.
 
-## What it does (MVP)
+## ✅ What it does (MVP)
 - ✅ Generates **exactly 5** interview questions, each with **tags** (e.g. `[Technical]`, `[Behavioral]`, `[Role-specific]`, `[Screening]`, `[Onsite]`, `[Final]`)
 - ✅ Uses **5 different system prompt variants** (dropdown) to represent different interviewer modes / rounds
 - ✅ If **Job Description is empty**, asks once for the **target role**, then proceeds
@@ -10,13 +10,15 @@ A single-page Streamlit app that generates **5 tailored interview questions (Eng
 - ✅ Includes a **temperature slider** (tuning requirement)
 - ✅ Includes a **security guard** (input validation + basic prompt-injection detection)
 
-## Tech stack
+Full behavior and output contract: see `REQUIREMENTS.md`.
+
+## 🧰 Tech stack
 - Frontend: **Streamlit**
 - LLM API: **OpenAI**
 - Tests: **pytest**
 - Lint/format (later): **ruff**
 
-## Run locally
+## 🏃 Run locally
 1) Create a virtual environment and install deps
 2) Add your OpenAI key
 3) Start the app
@@ -33,13 +35,13 @@ cp .env.example .env
 streamlit run app/ui/streamlit_app.py
 ```
 
-## Run tests
+## 🧪 Run tests
 ```bash
 pytest -q
 ```
 
 
-## Repo navigation
+## 🧭 Repo navigation
 
 REQUIREMENTS.md — MVP spec + acceptance criteria
 
