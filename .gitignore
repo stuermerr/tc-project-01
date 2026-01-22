@@ -40,8 +40,8 @@ venv/
 .cursor/
 
 # docs
-# *.md
-# !README.md
+*.md
+!README.md
 
 # local package installation metafiles
 *.egg-info/
