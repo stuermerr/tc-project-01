@@ -15,6 +15,7 @@
 | 2026-01-19 | Implemented Step 6 controller orchestration | Wire safety, prompt building, LLM, formatter | Ready for Streamlit UI |
 | 2026-01-19 | Implemented Step 7 Streamlit UI | Single-page inputs + generate flow | Ready for integration tests |
 | 2026-01-19 | Implemented Step 8 integration test + README update | End-to-end coverage and run instructions | Sprint 1 MVP complete |
+| 2026-01-19 | Added inline code comments + repo guide | Improve readability and onboarding | Easier navigation and understanding |
 
 ## Open questions
 - None currently.

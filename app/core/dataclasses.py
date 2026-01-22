@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Simple containers to keep cross-module interfaces explicit.
+
 
 @dataclass(frozen=True)
 class RequestPayload:

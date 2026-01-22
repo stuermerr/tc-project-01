@@ -31,8 +31,10 @@ def main() -> None:
     st.caption("Generate tailored interview questions from your JD, CV, and focus areas.")
 
     variants = get_prompt_variants()
+    # Map labels to ids so the UI stays readable while the payload stays numeric.
     variant_labels = {variant.name: variant.id for variant in variants}
 
+    # Two-column layout keeps the three text inputs visible at once.
     col_left, col_right = st.columns(2)
     with col_left:
         job_description = st.text_area(
@@ -85,6 +87,7 @@ def main() -> None:
         st.subheader("Generated Questions")
         st.markdown(response)
 
+        # Echo metadata so users can reproduce results.
         st.caption(
             f"Prompt variant: {selected_label} | Temperature: {temperature:.2f}"
         )

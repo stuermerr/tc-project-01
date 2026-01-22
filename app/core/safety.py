@@ -9,6 +9,7 @@ MAX_JOB_DESCRIPTION_LENGTH = 3000
 MAX_CV_LENGTH = 3000
 MAX_USER_PROMPT_LENGTH = 2000
 
+# Heuristic patterns for common prompt-injection attempts.
 _INJECTION_PATTERNS: Iterable[re.Pattern[str]] = (
     re.compile(r"\bignore (all|previous|prior) instructions\b"),
     re.compile(r"\bdisregard (all|previous|prior) instructions\b"),
@@ -53,6 +54,7 @@ def validate_inputs(
         if not ok:
             return False, message
 
+    # Check combined inputs so cross-field instructions are still caught.
     combined = "\n".join([job_description, cv_text, user_prompt])
     if _matches_injection(combined):
         return False, (

@@ -7,6 +7,7 @@ from app.core.dataclasses import PromptVariant, RequestPayload
 
 def _normalize_field(text: str) -> str:
     stripped = text.strip()
+    # Use a consistent placeholder so the LLM knows the field is intentionally empty.
     return stripped if stripped else "Not provided."
 
 
@@ -15,6 +16,7 @@ def build_messages(
 ) -> list[dict[str, str]]:
     """Build system and user messages from the request payload."""
 
+    # Keep the user message structure stable for easier testing and formatting.
     user_content = (
         "Job Description:\n"
         f"{_normalize_field(payload.job_description)}\n\n"

@@ -61,6 +61,7 @@ def _strip_list_prefix(line: str) -> str:
 
 
 def _extract_tagged_questions(raw_text: str) -> list[str]:
+    # Keep only lines that already include tags (e.g., [Technical]).
     questions: list[str] = []
     for line in raw_text.splitlines():
         candidate = _strip_list_prefix(line)
@@ -78,6 +79,7 @@ def _ensure_tagged(question: str) -> str:
 
 
 def _fallback_questions_from_text(raw_text: str) -> list[str]:
+    # Split on question marks to salvage questions from freeform text.
     questions: list[str] = []
     for segment in raw_text.split("?"):
         cleaned = segment.strip()
@@ -89,6 +91,7 @@ def _fallback_questions_from_text(raw_text: str) -> list[str]:
 
 
 def _ensure_five_questions(raw_text: str) -> list[str]:
+    # Priority: tagged lines -> inferred questions -> defaults.
     questions = _extract_tagged_questions(raw_text)
     if len(questions) < 5:
         for candidate in _fallback_questions_from_text(raw_text):
@@ -106,6 +109,7 @@ def _ensure_five_questions(raw_text: str) -> list[str]:
 
 
 def _summarize_job_description(job_description: str) -> list[str]:
+    # Naive summary: first up to 3 sentences trimmed to a safe length.
     sentences: list[str] = []
     for line in job_description.splitlines():
         line = line.strip()
@@ -128,6 +132,7 @@ def _summarize_job_description(job_description: str) -> list[str]:
 
 
 def _top_keywords(text: str, limit: int = 8) -> list[str]:
+    # Simple keyword extraction for alignments/gaps.
     tokens = [
         token
         for token in _TOKEN_PATTERN.findall(text.lower())
@@ -165,6 +170,7 @@ def format_response(raw_text: str, payload: RequestPayload) -> str:
 
     questions = _ensure_five_questions(raw_text)
     if _has_required_headings(raw_text, payload) and len(questions) == 5:
+        # Preserve the model response when it already meets the contract.
         return raw_text.strip()
 
     sections: list[str] = []

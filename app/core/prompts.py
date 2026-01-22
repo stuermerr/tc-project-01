@@ -5,6 +5,7 @@ from __future__ import annotations
 from app.core.dataclasses import PromptVariant
 
 
+# System prompt catalog used by the UI dropdown and orchestration layer.
 _PROMPT_VARIANTS = [
     PromptVariant(
         id=1,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+# Default model for Sprint 1; can be swapped later if needed.
 DEFAULT_MODEL = "gpt-4o-mini"
 
 try:
@@ -16,6 +17,7 @@ def generate_completion(messages: list[dict[str, str]], temperature: float) -> s
     """Generate a completion using the configured OpenAI model."""
 
     if OpenAI is None:
+        # Defer dependency errors to runtime so tests can still run without OpenAI.
         raise RuntimeError(
             "OpenAI client library is not installed. "
             "Install it with `pip install openai`."

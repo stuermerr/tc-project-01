@@ -15,6 +15,7 @@ def _select_variant(payload: RequestPayload):
     for variant in variants:
         if variant.id == payload.prompt_variant_id:
             return variant
+    # Fall back to the first variant if the requested id is missing.
     return variants[0]
 
 
