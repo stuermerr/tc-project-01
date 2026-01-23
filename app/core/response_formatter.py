@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from collections import Counter
 
 from app.core.dataclasses import RequestPayload
 from app.core.safety import sanitize_output, validate_output
 
+_LOGGER = logging.getLogger(__name__)
 # Precompiled patterns keep repeated parsing fast and consistent.
 _TAG_PATTERN = re.compile(r"\[[^\]]+\]")
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
@@ -176,25 +178,39 @@ def _has_required_headings(raw_text: str, payload: RequestPayload) -> bool:
 def format_response(raw_text: str, payload: RequestPayload) -> str:
     """Ensure the response contains required sections and exactly 5 questions."""
 
+    # Log basic response metadata to aid debugging without exposing content.
+    _LOGGER.info(
+        "format_response_start",
+        extra={
+            "raw_text_length": len(raw_text),
+            "has_cv": bool(payload.cv_text.strip()),
+            "has_job_description": bool(payload.job_description.strip()),
+        },
+    )
+
     # Guard against unsafe model output before any further processing.
     ok, _ = validate_output(raw_text)
     if not ok:
         sanitized = sanitize_output(raw_text)
         ok, _ = validate_output(sanitized)
         if not ok:
+            _LOGGER.warning("format_response_blocked")
             return (
                 "The model output contained unsafe content and could not be displayed. "
                 "Please try again."
             )
         raw_text = sanitized
+        _LOGGER.info("format_response_sanitized", extra={"raw_text_length": len(raw_text)})
 
     # Normalize the question list to exactly five items.
     questions = _ensure_five_questions(raw_text)
     if _has_required_headings(raw_text, payload) and len(questions) == 5:
         # Preserve the model response when it already meets the contract.
+        _LOGGER.info("format_response_passthrough", extra={"question_count": len(questions)})
         return raw_text.strip()
 
     # Build a fresh response that matches the required structure.
+    _LOGGER.info("format_response_rebuild", extra={"question_count": len(questions)})
     sections: list[str] = []
 
     if payload.job_description.strip():
@@ -262,4 +278,6 @@ def format_response(raw_text: str, payload: RequestPayload) -> str:
     )
 
     # Join sections with blank lines to improve readability.
-    return "\n\n".join(section for section in sections if section)
+    formatted = "\n\n".join(section for section in sections if section)
+    _LOGGER.info("format_response_done", extra={"formatted_length": len(formatted)})
+    return formatted

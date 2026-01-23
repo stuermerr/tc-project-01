@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 _DOTENV_LOADED = False
@@ -14,6 +15,8 @@ try:
     from openai import OpenAI
 except ImportError:  # pragma: no cover - exercised when dependency is missing
     OpenAI = None
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def _load_dotenv_once() -> None:
@@ -28,6 +31,8 @@ def _load_dotenv_once() -> None:
     except ImportError:
         return
     load_dotenv()
+    # Log once so it's clear that local env loading occurred.
+    _LOGGER.info("dotenv_loaded")
 
 
 def generate_completion(messages: list[dict[str, str]], temperature: float) -> str:
@@ -37,12 +42,22 @@ def generate_completion(messages: list[dict[str, str]], temperature: float) -> s
 
     if OpenAI is None:
         # Defer dependency errors to runtime so tests can still run without OpenAI.
+        _LOGGER.error("openai_client_missing")
         raise RuntimeError(
             "OpenAI client library is not installed. "
             "Install it with `pip install openai`."
         )
 
     # Build the client and forward the minimal payload we control.
+    _LOGGER.info(
+        "openai_request",
+        extra={
+            "model": DEFAULT_MODEL,
+            "temperature": temperature,
+            "message_count": len(messages),
+            "messages_total_length": sum(len(msg["content"]) for msg in messages),
+        },
+    )
     client = OpenAI()
     response: Any = client.chat.completions.create(
         model=DEFAULT_MODEL,

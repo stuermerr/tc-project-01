@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 
 import streamlit as st
@@ -11,6 +12,7 @@ from app.core.orchestration import generate_questions
 from app.core.prompts import get_prompt_variants
 from app.core.safety import check_rate_limit
 
+_LOGGER = logging.getLogger(__name__)
 
 def _build_payload(
     job_description: str,
@@ -78,11 +80,23 @@ def main() -> None:
     # Trigger a single generation run on button click.
     generate_clicked = st.button("Generate 5 Questions", type="primary")
     if generate_clicked:
+        # Capture a request-level log entry without exposing user content.
+        _LOGGER.info(
+            "ui_generate_clicked",
+            extra={
+                "job_description_length": len(job_description),
+                "cv_text_length": len(cv_text),
+                "user_prompt_length": len(user_prompt),
+                "selected_variant": selected_label,
+                "temperature": temperature,
+            },
+        )
         # Rate limit per session to prevent accidental rapid-fire requests.
         if "rate_limit_key" not in st.session_state:
             st.session_state["rate_limit_key"] = str(uuid.uuid4())
         ok, refusal = check_rate_limit(st.session_state["rate_limit_key"])
         if not ok:
+            _LOGGER.info("ui_rate_limited")
             st.error(refusal or "Too many requests. Please try again.")
             return
 
@@ -101,6 +115,7 @@ def main() -> None:
 
         if not ok:
             # Surface safety refusals or validation errors to the user.
+            _LOGGER.info("ui_request_blocked")
             st.error(response)
             return
 
@@ -112,6 +127,7 @@ def main() -> None:
         st.caption(
             f"Prompt variant: {selected_label} | Temperature: {temperature:.2f}"
         )
+        _LOGGER.info("ui_request_success")
 
 
 if __name__ == "__main__":

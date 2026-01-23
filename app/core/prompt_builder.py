@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
+
 from app.core.dataclasses import PromptVariant, RequestPayload
 from app.core.safety import build_salted_tag_names, generate_salt
 
+_LOGGER = logging.getLogger(__name__)
 
 def _normalize_field(text: str) -> str:
     # Normalize whitespace so empty fields are handled consistently.
@@ -43,7 +46,16 @@ def build_messages(
     )
 
     # Return messages in the order expected by the chat API.
-    return [
+    messages = [
         {"role": "system", "content": f"{safety_header}{variant.system_prompt}"},
         {"role": "user", "content": user_content},
     ]
+    # Log message sizes without exposing prompt content.
+    _LOGGER.info(
+        "prompt_messages_built",
+        extra={
+            "system_message_length": len(messages[0]["content"]),
+            "user_message_length": len(messages[1]["content"]),
+        },
+    )
+    return messages
