@@ -15,6 +15,9 @@ _INJECTION_PATTERNS: Iterable[re.Pattern[str]] = (
     re.compile(r"\bignore (all|previous|prior) instructions\b"),
     re.compile(r"\bdisregard (all|previous|prior) instructions\b"),
     re.compile(r"\boverride (all|previous|prior) instructions\b"),
+    re.compile(r"\bforget (all|previous|prior) instructions\b"),
+    re.compile(r"\byou are now\b"),
+    re.compile(r"\bact as\b"),
     re.compile(r"\b(system|developer|assistant) prompt\b"),
     re.compile(r"\breveal (the )?system prompt\b"),
     re.compile(r"\bshow (the )?system prompt\b"),
@@ -26,6 +29,7 @@ _INJECTION_PATTERNS: Iterable[re.Pattern[str]] = (
     re.compile(r"\binternal instructions\b"),
     re.compile(r"\bchain[- ]of[- ]thought\b"),
 )
+_CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
 
 
 def _matches_injection(text: str) -> bool:
@@ -43,6 +47,16 @@ def _check_length(label: str, text: str, limit: int) -> tuple[bool, str | None]:
     return True, None
 
 
+def _check_control_characters(label: str, text: str) -> tuple[bool, str | None]:
+    # Reject invisible control characters while allowing common whitespace.
+    if _CONTROL_CHAR_PATTERN.search(text):
+        return False, (
+            f"{label} contains non-printable characters. "
+            "Please remove them and try again."
+        )
+    return True, None
+
+
 def validate_inputs(
     job_description: str, cv_text: str, user_prompt: str
 ) -> tuple[bool, str | None]:
@@ -55,6 +69,9 @@ def validate_inputs(
         ("User prompt", user_prompt, MAX_USER_PROMPT_LENGTH),
     ):
         ok, message = _check_length(label, text, limit)
+        if not ok:
+            return False, message
+        ok, message = _check_control_characters(label, text)
         if not ok:
             return False, message
 
