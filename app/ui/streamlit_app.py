@@ -12,6 +12,7 @@ from app.core.logging_config import setup_logging
 from app.core.orchestration import generate_questions
 from app.core.prompts import get_prompt_variants
 from app.core.safety import check_rate_limit
+from app.core.structured_output import render_markdown_from_response
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -125,8 +126,8 @@ def main() -> None:
         # Render the structured response returned by the controller.
         st.subheader("Generated Questions")
         if isinstance(response, dict):
-            # Display the JSON directly to avoid hard-coded formatting rules.
-            st.json(response)
+            # Convert structured output into readable markdown for display.
+            st.markdown(render_markdown_from_response(response))
         else:
             st.markdown(response)
 

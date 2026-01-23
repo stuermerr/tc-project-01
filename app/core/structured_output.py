@@ -77,6 +77,73 @@ STRUCTURED_OUTPUT_GUIDANCE = (
     "- interview_questions: exactly 5 strings, each prefixed with a tag like "
     "[Technical], [Behavioral], [Role-specific], [Screening], [Onsite], [Final], or [General].\n"
     "- next_step_suggestions: 2-4 short follow-up ideas.\n"
-    "- Write all strings in English.\n"
+    "- Write all strings in English and use Markdown-friendly text inside each string "
+    "(e.g., **bold** for emphasis). Do not wrap the JSON in code fences.\n"
     "Do not include markdown, prose outside JSON, or extra keys."
 )
+
+
+def render_markdown_from_response(response: dict[str, object]) -> str:
+    """Convert the structured response dict into user-friendly markdown."""
+
+    def _as_list(value: object) -> list[str]:
+        if isinstance(value, list):
+            return [str(item) for item in value]
+        return []
+
+    def _add_section(lines: list[str], title: str, items: list[str], numbered: bool) -> None:
+        if not items:
+            return
+        lines.append(f"## {title}")
+        if numbered:
+            for index, item in enumerate(items, 1):
+                lines.append(f"{index}. {item}")
+        else:
+            for item in items:
+                lines.append(f"- {item}")
+        lines.append("")
+
+    sections: list[str] = []
+
+    _add_section(
+        sections,
+        "Target Role Context",
+        _as_list(response.get("target_role_context")),
+        numbered=False,
+    )
+
+    cv_note = response.get("cv_note")
+    if isinstance(cv_note, str) and cv_note.strip():
+        sections.append("## CV Note")
+        sections.append(cv_note.strip())
+        sections.append("")
+
+    _add_section(
+        sections,
+        "Alignments",
+        _as_list(response.get("alignments")),
+        numbered=False,
+    )
+
+    _add_section(
+        sections,
+        "Gaps / Risk areas",
+        _as_list(response.get("gaps_or_risk_areas")),
+        numbered=False,
+    )
+
+    _add_section(
+        sections,
+        "Interview Questions",
+        _as_list(response.get("interview_questions")),
+        numbered=True,
+    )
+
+    _add_section(
+        sections,
+        "Next-step suggestions",
+        _as_list(response.get("next_step_suggestions")),
+        numbered=False,
+    )
+
+    return "\n".join(sections).strip()
