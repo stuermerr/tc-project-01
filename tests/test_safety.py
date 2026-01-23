@@ -5,6 +5,8 @@ from app.core.safety import (
     MAX_CV_LENGTH,
     MAX_JOB_DESCRIPTION_LENGTH,
     MAX_USER_PROMPT_LENGTH,
+    sanitize_output,
+    validate_output,
     validate_inputs,
 )
 
@@ -107,6 +109,21 @@ def test_control_characters_trigger_refusal():
     )
     assert ok is False
     assert message
+
+
+def test_validate_output_blocks_internal_tags():
+    # Outputs that echo internal tags should be blocked.
+    ok, message = validate_output("Here is <user-job-acde>leaked</user-job-acde> text.")
+    assert ok is False
+    assert message
+
+
+def test_sanitize_output_removes_internal_tags_and_redacts_prompt():
+    # Sanitization should strip internal tags and redact system prompt mentions.
+    raw = "See <user-cv-acde>hidden</user-cv-acde> system prompt details."
+    sanitized = sanitize_output(raw)
+    assert "<user-cv-acde>" not in sanitized
+    assert "system prompt" not in sanitized.lower()
 
 
 def test_clean_inputs_pass():

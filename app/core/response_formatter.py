@@ -6,6 +6,7 @@ import re
 from collections import Counter
 
 from app.core.dataclasses import RequestPayload
+from app.core.safety import sanitize_output, validate_output
 
 # Precompiled patterns keep repeated parsing fast and consistent.
 _TAG_PATTERN = re.compile(r"\[[^\]]+\]")
@@ -174,6 +175,18 @@ def _has_required_headings(raw_text: str, payload: RequestPayload) -> bool:
 
 def format_response(raw_text: str, payload: RequestPayload) -> str:
     """Ensure the response contains required sections and exactly 5 questions."""
+
+    # Guard against unsafe model output before any further processing.
+    ok, _ = validate_output(raw_text)
+    if not ok:
+        sanitized = sanitize_output(raw_text)
+        ok, _ = validate_output(sanitized)
+        if not ok:
+            return (
+                "The model output contained unsafe content and could not be displayed. "
+                "Please try again."
+            )
+        raw_text = sanitized
 
     # Normalize the question list to exactly five items.
     questions = _ensure_five_questions(raw_text)

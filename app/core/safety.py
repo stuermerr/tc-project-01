@@ -31,6 +31,10 @@ _INJECTION_PATTERNS: Iterable[re.Pattern[str]] = (
     re.compile(r"\bchain[- ]of[- ]thought\b"),
 )
 _CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
+_OUTPUT_FORBIDDEN_PATTERNS: Iterable[re.Pattern[str]] = (
+    re.compile(r"</?user-(job|cv|prompt)-[a-f0-9]+>", re.IGNORECASE),
+    re.compile(r"\bsystem prompt\b", re.IGNORECASE),
+)
 
 
 def _matches_injection(text: str) -> bool:
@@ -56,6 +60,30 @@ def _check_control_characters(label: str, text: str) -> tuple[bool, str | None]:
             "Please remove them and try again."
         )
     return True, None
+
+
+def validate_output(raw_text: str) -> tuple[bool, str | None]:
+    """Detect unsafe model output that leaks internal details."""
+
+    # Block outputs that include internal tags or system prompt references.
+    if any(pattern.search(raw_text) for pattern in _OUTPUT_FORBIDDEN_PATTERNS):
+        return False, (
+            "The model output contained internal instructions or tags and was blocked."
+        )
+    return True, None
+
+
+def sanitize_output(raw_text: str) -> str:
+    """Remove internal tags or system prompt references from model output."""
+
+    sanitized = raw_text
+    # Strip salted tags while preserving surrounding content.
+    sanitized = re.sub(
+        r"</?user-(job|cv|prompt)-[a-f0-9]+>", "", sanitized, flags=re.IGNORECASE
+    )
+    # Redact explicit mentions of the system prompt.
+    sanitized = re.sub(r"(?i)\bsystem prompt\b", "[redacted]", sanitized)
+    return sanitized
 
 
 def generate_salt(num_bytes: int = 6) -> str:
