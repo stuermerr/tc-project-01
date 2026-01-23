@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import uuid
+
 import streamlit as st
 
 from app.core.dataclasses import RequestPayload
 from app.core.orchestration import generate_questions
 from app.core.prompts import get_prompt_variants
+from app.core.safety import check_rate_limit
 
 
 def _build_payload(
@@ -75,6 +78,14 @@ def main() -> None:
     # Trigger a single generation run on button click.
     generate_clicked = st.button("Generate 5 Questions", type="primary")
     if generate_clicked:
+        # Rate limit per session to prevent accidental rapid-fire requests.
+        if "rate_limit_key" not in st.session_state:
+            st.session_state["rate_limit_key"] = str(uuid.uuid4())
+        ok, refusal = check_rate_limit(st.session_state["rate_limit_key"])
+        if not ok:
+            st.error(refusal or "Too many requests. Please try again.")
+            return
+
         # Build the payload once so the controller gets a stable snapshot.
         payload = _build_payload(
             job_description=job_description,

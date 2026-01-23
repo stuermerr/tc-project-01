@@ -5,6 +5,7 @@ from app.core.safety import (
     MAX_CV_LENGTH,
     MAX_JOB_DESCRIPTION_LENGTH,
     MAX_USER_PROMPT_LENGTH,
+    check_rate_limit,
     record_safety_event,
     sanitize_output,
     validate_output,
@@ -182,6 +183,29 @@ def test_sanitize_output_logs_event(monkeypatch):
 
     sanitize_output("Leaked <user-job-acde>data</user-job-acde>.")
     assert "output_sanitized" in events
+
+
+def test_check_rate_limit_blocks_after_threshold():
+    # A key should be blocked after exceeding the limit within the window.
+    key = "rate-limit-test"
+    for i in range(5):
+        ok, _ = check_rate_limit(key, now=1000.0 + i)
+        assert ok is True
+
+    ok, message = check_rate_limit(key, now=1000.0 + 5)
+    assert ok is False
+    assert message
+
+
+def test_check_rate_limit_allows_after_window():
+    # Requests should be allowed again once the window has passed.
+    key = "rate-limit-reset-test"
+    for i in range(5):
+        ok, _ = check_rate_limit(key, now=2000.0 + i)
+        assert ok is True
+
+    ok, _ = check_rate_limit(key, now=2000.0 + 61)
+    assert ok is True
 
 
 def test_clean_inputs_pass():

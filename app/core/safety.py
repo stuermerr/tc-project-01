@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import secrets
 import logging
+import time
 from typing import Iterable
 
 # Length limits keep payloads bounded for safety and cost.
@@ -38,6 +39,9 @@ _OUTPUT_FORBIDDEN_PATTERNS: Iterable[re.Pattern[str]] = (
 )
 _SAFETY_EVENT_COUNTS: dict[str, int] = {}
 _SAFETY_LOGGER = logging.getLogger(__name__)
+_RATE_LIMIT_BUCKETS: dict[str, list[float]] = {}
+_RATE_LIMIT_WINDOW_SECONDS = 60
+_RATE_LIMIT_MAX_REQUESTS = 5
 
 
 def _matches_injection(text: str) -> bool:
@@ -90,6 +94,22 @@ def record_safety_event(event_type: str, details: dict | None = None) -> None:
             "count": _SAFETY_EVENT_COUNTS[event_type],
         },
     )
+
+
+def check_rate_limit(key: str, now: float | None = None) -> tuple[bool, str | None]:
+    """Check whether the key has exceeded the configured request rate."""
+
+    # Use the current wall time unless tests pass a fixed value.
+    timestamp = time.time() if now is None else now
+    window_start = timestamp - _RATE_LIMIT_WINDOW_SECONDS
+    bucket = _RATE_LIMIT_BUCKETS.setdefault(key or "anonymous", [])
+    # Trim old entries to keep memory bounded.
+    bucket[:] = [entry for entry in bucket if entry >= window_start]
+    if len(bucket) >= _RATE_LIMIT_MAX_REQUESTS:
+        record_safety_event("rate_limited", {"key": key})
+        return False, "Too many requests. Please wait a moment and try again."
+    bucket.append(timestamp)
+    return True, None
 
 
 def validate_output(raw_text: str) -> tuple[bool, str | None]:
