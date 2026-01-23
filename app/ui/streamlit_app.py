@@ -8,6 +8,7 @@ import uuid
 import streamlit as st
 
 from app.core.dataclasses import RequestPayload
+from app.core.logging_config import setup_logging
 from app.core.orchestration import generate_questions
 from app.core.prompts import get_prompt_variants
 from app.core.safety import check_rate_limit
@@ -32,6 +33,8 @@ def _build_payload(
 
 
 def main() -> None:
+    # Ensure standard console logging is active before any log calls.
+    setup_logging()
     # Configure the page once at startup to control layout and branding.
     st.set_page_config(page_title="Interview Practice", page_icon="🧩", layout="wide")
     st.title("Interview Practice App")

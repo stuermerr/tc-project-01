@@ -1,6 +1,7 @@
 import logging
 
 from app.core.dataclasses import RequestPayload
+from app.core.logging_config import setup_logging
 from app.core.llm import openai_client
 from app.core.orchestration import generate_questions
 
@@ -99,3 +100,23 @@ def test_openai_client_logs_metadata_without_prompt_content(monkeypatch, caplog)
     )
     assert "system secret" not in record_text
     assert "user secret" not in record_text
+
+
+def test_setup_logging_creates_console_handler():
+    # Temporarily clear handlers so we can verify setup_logging adds one.
+    root_logger = logging.getLogger()
+    original_handlers = list(root_logger.handlers)
+    original_level = root_logger.level
+    try:
+        for handler in list(root_logger.handlers):
+            root_logger.removeHandler(handler)
+        setup_logging("INFO")
+        assert root_logger.handlers
+        assert root_logger.level == logging.INFO
+    finally:
+        # Restore original handlers and level to avoid side effects on other tests.
+        for handler in list(root_logger.handlers):
+            root_logger.removeHandler(handler)
+        for handler in original_handlers:
+            root_logger.addHandler(handler)
+        root_logger.setLevel(original_level)

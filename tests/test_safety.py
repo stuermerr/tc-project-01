@@ -51,6 +51,13 @@ def test_oversized_inputs_trigger_refusal():
     assert ok is False
     assert message
 
+
+def test_job_description_max_length_allows_boundary():
+    # JD at the configured max length should pass validation.
+    ok, message = validate_inputs("a" * MAX_JOB_DESCRIPTION_LENGTH, "", "")
+    assert ok is True
+    assert message is None
+
     # Oversized user prompt should be rejected.
     ok, message = validate_inputs(
         "",
