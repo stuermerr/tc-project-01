@@ -52,51 +52,65 @@ def main() -> None:
     # Load the supported model list so the UI stays in sync with the backend.
     allowed_models = get_allowed_models()
 
-    # Two-column layout keeps the three text inputs visible at once.
-    col_left, col_right = st.columns(2)
-    with col_left:
-        # Capture JD and CV inputs on the left to match typical reading order.
-        job_description = st.text_area(
-            "Job Description (optional)",
-            height=220,
-            placeholder="Paste the target role description here.",
-        )
-        cv_text = st.text_area(
-            "CV / Resume (optional)",
-            height=220,
-            placeholder="Paste your CV or resume here.",
-        )
-    with col_right:
-        # Capture user prompt and settings on the right for quick tuning.
-        user_prompt = st.text_area(
+    # Wrap inputs in a form so Enter can submit from the single-line prompt field.
+    with st.form("question_generator_form"):
+        # Place JD and CV side-by-side at the top for easy comparison.
+        col_left, col_right = st.columns(2)
+        with col_left:
+            # Capture JD input on the left to match typical reading order.
+            job_description = st.text_area(
+                "Job Description (optional)",
+                height=220,
+                placeholder="Paste the target role description here.",
+            )
+        with col_right:
+            # Capture CV input on the right so both documents stay visible.
+            cv_text = st.text_area(
+                "CV / Resume (optional)",
+                height=220,
+                placeholder="Paste your CV or resume here.",
+            )
+
+        # Collect settings below the JD/CV inputs in a single row.
+        settings_left, settings_mid, settings_right = st.columns(3)
+        with settings_left:
+            # Let users pick from the supported models while defaulting to the baseline.
+            model_name = st.selectbox(
+                "Model",
+                options=allowed_models,
+                index=allowed_models.index(DEFAULT_MODEL)
+                if DEFAULT_MODEL in allowed_models
+                else 0,
+            )
+        with settings_mid:
+            # Prompt variant stays visible next to the model selector.
+            selected_label = st.selectbox(
+                "Prompt variant",
+                options=list(variant_labels.keys()),
+            )
+        with settings_right:
+            # Keep temperature tuning accessible without crowding the inputs.
+            temperature = st.slider(
+                "Temperature",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.2,
+                step=0.05,
+            )
+
+        # Smaller single-line prompt lets Enter submit the form.
+        user_prompt = st.text_input(
             "User Prompt (optional)",
-            height=220,
             placeholder="e.g., Focus on backend APIs and system design.",
         )
-        # Let users pick from the supported models while defaulting to the current baseline.
-        model_name = st.selectbox(
-            "Model",
-            options=allowed_models,
-            index=allowed_models.index(DEFAULT_MODEL)
-            if DEFAULT_MODEL in allowed_models
-            else 0,
-        )
-        selected_label = st.selectbox(
-            "Prompt variant",
-            options=list(variant_labels.keys()),
-        )
-        temperature = st.slider(
-            "Temperature",
-            min_value=0.0,
-            max_value=1.0,
-            value=0.2,
-            step=0.05,
+
+        # Center the submit button at the bottom of the form.
+        _, button_col, _ = st.columns([1, 1, 1])
+        generate_clicked = button_col.form_submit_button(
+            "Generate 5 Questions", type="primary"
         )
 
     st.divider()
-
-    # Trigger a single generation run on button click.
-    generate_clicked = st.button("Generate 5 Questions", type="primary")
     if generate_clicked:
         # Capture a request-level log entry without exposing user content.
         _LOGGER.info(
