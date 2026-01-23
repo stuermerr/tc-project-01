@@ -1,11 +1,6 @@
-import re
-
 from app.core.dataclasses import RequestPayload
 from app.core.llm import openai_client
 from app.core.orchestration import generate_questions
-
-# Shared tag matcher for counting questions.
-_TAG_PATTERN = re.compile(r"\[[^\]]+\]")
 
 
 class _DummyMessage:
@@ -30,14 +25,19 @@ class _DummyCompletions:
     # Return five tagged questions to simulate a compliant model output.
     def create(self, **kwargs):
         return _DummyResponse(
-            "\n".join(
-                [
-                    "[Technical] Question one?",
-                    "[Behavioral] Question two?",
-                    "[Role-specific] Question three?",
-                    "[Screening] Question four?",
-                    "[Onsite] Question five?",
-                ]
+            (
+                '{"target_role_context":["Backend role summary"],'
+                '"cv_note":null,'
+                '"alignments":["Python APIs align with JD"],'
+                '"gaps_or_risk_areas":["Deepen distributed systems"],'
+                '"interview_questions":['
+                '"[Technical] Question one?",'
+                '"[Behavioral] Question two?",'
+                '"[Role-specific] Question three?",'
+                '"[Screening] Question four?",'
+                '"[Onsite] Question five?"'
+                '],'
+                '"next_step_suggestions":["Paste your CV","Ask for another set"]}'
             )
         )
 
@@ -54,16 +54,11 @@ class _DummyOpenAI:
         self.chat = _DummyChat()
 
 
-def _count_tagged_questions(text: str) -> int:
-    # Count only lines that include a bracketed tag.
-    return sum(1 for line in text.splitlines() if _TAG_PATTERN.search(line))
-
-
 def test_end_to_end_flow_with_mocked_openai(monkeypatch):
     # Patch the OpenAI client so no network calls are made.
     monkeypatch.setattr(openai_client, "OpenAI", _DummyOpenAI)
 
-    # Build a realistic payload to exercise the formatter path.
+    # Build a realistic payload to exercise the structured-output path.
     payload = RequestPayload(
         job_description="Backend engineer role focused on Python services.",
         cv_text="Built Python APIs and deployed microservices.",
@@ -77,9 +72,10 @@ def test_end_to_end_flow_with_mocked_openai(monkeypatch):
 
     # Validate required sections and question count in the response.
     assert ok is True
-    assert "Target Role Context" in response
-    assert "Alignments" in response
-    assert "Gaps / Risk areas" in response
-    assert "Interview Questions" in response
-    assert "Next-step suggestions" in response
-    assert _count_tagged_questions(response) == 5
+    assert isinstance(response, dict)
+    assert "target_role_context" in response
+    assert "alignments" in response
+    assert "gaps_or_risk_areas" in response
+    assert "interview_questions" in response
+    assert "next_step_suggestions" in response
+    assert len(response["interview_questions"]) == 5

@@ -40,17 +40,24 @@ def test_generate_questions_success_path(monkeypatch):
     def _fake_completion(messages, temperature):
         assert messages
         assert temperature == 0.4
-        return "raw-response"
-
-    # Fake the formatter to confirm orchestration order.
-    def _fake_formatter(raw_text: str, payload: RequestPayload):
-        assert raw_text == "raw-response"
-        return "formatted-response"
+        return True, (
+            '{"target_role_context":["Role summary"],'
+            '"cv_note":null,'
+            '"alignments":["Alignment"],'
+            '"gaps_or_risk_areas":["Gap"],'
+            '"interview_questions":['
+            '"[Technical] Question one?",'
+            '"[Behavioral] Question two?",'
+            '"[Role-specific] Question three?",'
+            '"[Screening] Question four?",'
+            '"[Onsite] Question five?"'
+            '],'
+            '"next_step_suggestions":["Next step","Another step"]}'
+        )
 
     # Patch dependencies to isolate the controller behavior.
     monkeypatch.setattr("app.core.orchestration.validate_inputs", _pass_validation)
     monkeypatch.setattr("app.core.orchestration.generate_completion", _fake_completion)
-    monkeypatch.setattr("app.core.orchestration.format_response", _fake_formatter)
 
     # Build a valid payload for the success path.
     payload = RequestPayload(
@@ -61,8 +68,9 @@ def test_generate_questions_success_path(monkeypatch):
         temperature=0.4,
     )
 
-    # Execute the controller and verify the formatted result.
+    # Execute the controller and verify the structured result.
     ok, message = generate_questions(payload)
 
     assert ok is True
-    assert message == "formatted-response"
+    assert isinstance(message, dict)
+    assert len(message["interview_questions"]) == 5

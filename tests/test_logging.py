@@ -48,14 +48,23 @@ def test_orchestration_logs_metadata_without_raw_text(monkeypatch, caplog):
         return True, None
 
     def _fake_completion(messages, temperature):
-        return "raw-response"
-
-    def _fake_formatter(raw_text: str, payload: RequestPayload):
-        return "formatted-response"
+        return True, (
+            '{"target_role_context":["Role summary"],'
+            '"cv_note":null,'
+            '"alignments":["Alignment"],'
+            '"gaps_or_risk_areas":["Gap"],'
+            '"interview_questions":['
+            '"[Technical] Question one?",'
+            '"[Behavioral] Question two?",'
+            '"[Role-specific] Question three?",'
+            '"[Screening] Question four?",'
+            '"[Onsite] Question five?"'
+            '],'
+            '"next_step_suggestions":["Next step","Another step"]}'
+        )
 
     monkeypatch.setattr("app.core.orchestration.validate_inputs", _pass_validation)
     monkeypatch.setattr("app.core.orchestration.generate_completion", _fake_completion)
-    monkeypatch.setattr("app.core.orchestration.format_response", _fake_formatter)
 
     payload = RequestPayload(
         job_description="JD secret text",
@@ -91,8 +100,9 @@ def test_openai_client_logs_metadata_without_prompt_content(monkeypatch, caplog)
     ]
 
     with caplog.at_level(logging.INFO):
-        result = openai_client.generate_completion(messages, temperature=0.4)
+        ok, result = openai_client.generate_completion(messages, temperature=0.4)
 
+    assert ok is True
     assert result == "mocked-response"
     record = next(r for r in caplog.records if r.message == "openai_request")
     record_text = " ".join(

@@ -124,7 +124,11 @@ def main() -> None:
 
         # Render the structured response returned by the controller.
         st.subheader("Generated Questions")
-        st.markdown(response)
+        if isinstance(response, dict):
+            # Display the JSON directly to avoid hard-coded formatting rules.
+            st.json(response)
+        else:
+            st.markdown(response)
 
         # Echo metadata so users can reproduce results.
         st.caption(

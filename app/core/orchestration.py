@@ -1,7 +1,8 @@
-"""Controller orchestrating validation, prompt building, LLM call, and formatting."""
+"""Controller orchestrating validation, prompt building, LLM call, and parsing."""
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 
@@ -9,10 +10,18 @@ from app.core.dataclasses import RequestPayload
 from app.core.llm.openai_client import generate_completion
 from app.core.prompt_builder import build_messages
 from app.core.prompts import get_prompt_variants
-from app.core.response_formatter import format_response
-from app.core.safety import validate_inputs
+from app.core.safety import sanitize_output, validate_inputs, validate_output
 
 _LOGGER = logging.getLogger(__name__)
+
+_REQUIRED_RESPONSE_KEYS = {
+    "target_role_context",
+    "cv_note",
+    "alignments",
+    "gaps_or_risk_areas",
+    "interview_questions",
+    "next_step_suggestions",
+}
 
 
 def _select_variant(payload: RequestPayload):
@@ -42,7 +51,52 @@ def _payload_metadata(payload: RequestPayload) -> dict[str, int | float]:
     }
 
 
-def generate_questions(payload: RequestPayload) -> tuple[bool, str]:
+
+def _parse_structured_output(raw_text: str) -> tuple[bool, dict[str, object] | str]:
+    """Parse structured JSON output and return a dict or error message."""
+
+    # Ensure model output does not leak internal tags before parsing.
+    ok, _ = validate_output(raw_text)
+    if not ok:
+        sanitized = sanitize_output(raw_text)
+        ok, _ = validate_output(sanitized)
+        if not ok:
+            _LOGGER.warning("structured_output_blocked")
+            return False, (
+                "The model output contained unsafe content and could not be displayed. "
+                "Please try again."
+            )
+        raw_text = sanitized
+        _LOGGER.info("structured_output_sanitized", extra={"raw_text_length": len(raw_text)})
+
+    # Parse the JSON response while avoiding raw-content logging.
+    try:
+        parsed = json.loads(raw_text)
+    except json.JSONDecodeError:
+        _LOGGER.error("structured_output_parse_failed", extra={"reason": "json_decode"})
+        return False, "The model returned invalid JSON. Please try again."
+
+    if not isinstance(parsed, dict):
+        _LOGGER.error("structured_output_parse_failed", extra={"reason": "not_object"})
+        return False, "The model returned an unexpected JSON shape. Please try again."
+
+    missing = _REQUIRED_RESPONSE_KEYS.difference(parsed.keys())
+    if missing:
+        _LOGGER.error(
+            "structured_output_parse_failed",
+            extra={"reason": "missing_keys", "missing_count": len(missing)},
+        )
+        return False, "The model response was missing required fields. Please try again."
+
+    questions = parsed.get("interview_questions")
+    if not isinstance(questions, list) or len(questions) != 5:
+        _LOGGER.error("structured_output_parse_failed", extra={"reason": "bad_questions"})
+        return False, "The model did not return exactly 5 questions. Please try again."
+
+    return True, parsed
+
+
+def generate_questions(payload: RequestPayload) -> tuple[bool, dict[str, object] | str]:
     """Generate interview questions or return a refusal message."""
 
     # Log request metadata at the entry point for traceability.
@@ -77,20 +131,26 @@ def generate_questions(payload: RequestPayload) -> tuple[bool, str]:
         },
     )
     llm_start = time.monotonic()
-    raw_text = generate_completion(messages, payload.temperature)
+    ok, raw_text = generate_completion(messages, payload.temperature)
     llm_duration_ms = int((time.monotonic() - llm_start) * 1000)
     _LOGGER.info(
         "llm_response_received",
-        extra={"duration_ms": llm_duration_ms, "raw_text_length": len(raw_text)},
-    )
-    format_start = time.monotonic()
-    formatted = format_response(raw_text, payload)
-    format_duration_ms = int((time.monotonic() - format_start) * 1000)
-    _LOGGER.info(
-        "response_formatted",
         extra={
-            "duration_ms": format_duration_ms,
-            "formatted_length": len(formatted),
+            "duration_ms": llm_duration_ms,
+            "raw_text_length": len(raw_text),
         },
     )
-    return True, formatted
+    if not ok:
+        _LOGGER.info("llm_refusal")
+        return False, raw_text
+
+    parse_start = time.monotonic()
+    ok, parsed = _parse_structured_output(raw_text)
+    parse_duration_ms = int((time.monotonic() - parse_start) * 1000)
+    _LOGGER.info(
+        "structured_output_parsed",
+        extra={"duration_ms": parse_duration_ms, "ok": ok},
+    )
+    if not ok:
+        return False, parsed
+    return True, parsed

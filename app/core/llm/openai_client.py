@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from app.core.structured_output import STRUCTURED_OUTPUT_SCHEMA
+
 _DOTENV_LOADED = False
 
 # Default model for Sprint 1; can be swapped later if needed.
@@ -35,7 +37,9 @@ def _load_dotenv_once() -> None:
     _LOGGER.info("dotenv_loaded")
 
 
-def generate_completion(messages: list[dict[str, str]], temperature: float) -> str:
+def generate_completion(
+    messages: list[dict[str, str]], temperature: float
+) -> tuple[bool, str]:
     """Generate a completion using the configured OpenAI model."""
 
     _load_dotenv_once()
@@ -63,6 +67,14 @@ def generate_completion(messages: list[dict[str, str]], temperature: float) -> s
         model=DEFAULT_MODEL,
         messages=messages,
         temperature=temperature,
+        # Ask the model to return JSON that matches our schema instead of free-form text.
+        response_format={"type": "json_schema", "json_schema": STRUCTURED_OUTPUT_SCHEMA},
     )
     # Extract the first response choice for a single-turn UI.
-    return response.choices[0].message.content or ""
+    message = response.choices[0].message
+    refusal = getattr(message, "refusal", None)
+    if refusal:
+        # Surface refusal text without exposing additional content.
+        _LOGGER.info("openai_refusal")
+        return False, refusal
+    return True, message.content or ""
