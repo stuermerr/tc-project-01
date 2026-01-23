@@ -136,6 +136,7 @@ def test_record_safety_event_increments_counts(monkeypatch):
         events.append((extra["event_type"], extra["details"], extra["count"]))
 
     monkeypatch.setattr("app.core.safety._SAFETY_LOGGER.info", _capture)
+    monkeypatch.setattr("app.core.safety._SAFETY_EVENT_COUNTS", {})
 
     record_safety_event("input_length_exceeded", {"field": "JD", "length": 10})
     record_safety_event("input_length_exceeded", {"field": "JD", "length": 11})
@@ -204,7 +205,7 @@ def test_check_rate_limit_allows_after_window():
         ok, _ = check_rate_limit(key, now=2000.0 + i)
         assert ok is True
 
-    ok, _ = check_rate_limit(key, now=2000.0 + 61)
+    ok, _ = check_rate_limit(key, now=2000.0 + 31)
     assert ok is True
 
 

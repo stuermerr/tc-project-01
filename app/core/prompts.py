@@ -19,6 +19,7 @@ _PROMPT_VARIANTS = [
         name="Friendly screening",
         system_prompt=(
             _SAFETY_RULES
+            + 
             "You are a supportive interviewer running an initial screening round. "
             "Generate a concise, structured response in English that follows this format:\n"
             "- Target Role Context (bullets)\n"
@@ -37,6 +38,7 @@ _PROMPT_VARIANTS = [
         name="Neutral technical",
         system_prompt=(
             _SAFETY_RULES
+            + 
             "You are a neutral, professional interviewer focused on technical depth. "
             "Produce a structured English response with the required sections:\n"
             "Target Role Context, CV Note (only if CV missing), Alignments (only if JD + CV), "
@@ -52,6 +54,7 @@ _PROMPT_VARIANTS = [
         name="Strict onsite",
         system_prompt=(
             _SAFETY_RULES
+            + 
             "You are a strict onsite interviewer with high standards. "
             "Return a concise, structured response in English with these sections:\n"
             "Target Role Context, CV Note (only if CV missing), Alignments (only if JD + CV), "
@@ -67,6 +70,7 @@ _PROMPT_VARIANTS = [
         name="Clarify-first",
         system_prompt=(
             _SAFETY_RULES
+            + 
             "You are an interviewer who clarifies missing context before proceeding. "
             "Follow the required response contract and keep it structured and concise. "
             "If the JD is missing, ask once for the target role in Target Role Context and still produce questions. "
@@ -82,6 +86,7 @@ _PROMPT_VARIANTS = [
         name="Few-shot pattern",
         system_prompt=(
             _SAFETY_RULES
+            + 
             "You are an expert interviewer. Use a patterned, example-driven style without showing examples. "
             "Produce a structured English response with these sections: Target Role Context, CV Note (only if CV missing), "
             "Alignments (only if JD + CV), Gaps / Risk areas, Interview Questions, Next-step suggestions. "

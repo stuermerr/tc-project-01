@@ -40,7 +40,7 @@ _OUTPUT_FORBIDDEN_PATTERNS: Iterable[re.Pattern[str]] = (
 _SAFETY_EVENT_COUNTS: dict[str, int] = {}
 _SAFETY_LOGGER = logging.getLogger(__name__)
 _RATE_LIMIT_BUCKETS: dict[str, list[float]] = {}
-_RATE_LIMIT_WINDOW_SECONDS = 60
+_RATE_LIMIT_WINDOW_SECONDS = 30
 _RATE_LIMIT_MAX_REQUESTS = 5
 
 
