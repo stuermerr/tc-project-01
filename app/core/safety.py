@@ -57,6 +57,41 @@ def _check_control_characters(label: str, text: str) -> tuple[bool, str | None]:
     return True, None
 
 
+def _is_high_confidence(result: object) -> bool:
+    # Normalize common ML detector outputs into a high-confidence decision.
+    if isinstance(result, bool):
+        return result
+    if isinstance(result, (int, float)):
+        return result >= 0.8
+    if isinstance(result, dict):
+        for key in ("score", "confidence", "probability"):
+            value = result.get(key)
+            if isinstance(value, (int, float)) and value >= 0.8:
+                return True
+    return False
+
+
+def _ml_injection_check(text: str) -> bool:
+    # Attempt ML-based injection detection when the optional dependency exists.
+    try:
+        import pytector
+    except Exception:
+        return False
+
+    try:
+        if hasattr(pytector, "detect") and callable(pytector.detect):
+            score = pytector.detect(text)
+        elif hasattr(pytector, "Pytector"):
+            detector = pytector.Pytector()
+            score = detector.detect(text)
+        else:
+            return False
+    except Exception:
+        return False
+
+    return _is_high_confidence(score)
+
+
 def validate_inputs(
     job_description: str, cv_text: str, user_prompt: str
 ) -> tuple[bool, str | None]:
@@ -81,6 +116,13 @@ def validate_inputs(
         return False, (
             "Input appears to include prompt-injection instructions. "
             "Please remove them and try again."
+        )
+
+    # Run optional ML-based detection and fail closed on high-confidence hits.
+    if _ml_injection_check(combined):
+        return False, (
+            "Input appears to be a prompt-injection attempt. "
+            "Please remove it and try again."
         )
 
     # No issues found; allow the request to proceed.

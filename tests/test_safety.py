@@ -1,3 +1,6 @@
+import sys
+import types
+
 from app.core.safety import (
     MAX_CV_LENGTH,
     MAX_JOB_DESCRIPTION_LENGTH,
@@ -26,6 +29,44 @@ def test_additional_injection_phrase_triggers_refusal():
     )
     assert ok is False
     assert message
+
+
+def test_ml_injection_detection_triggers_refusal(monkeypatch):
+    # Simulate the optional detector returning a high-confidence signal.
+    fake_module = types.ModuleType("pytector")
+
+    def _detect(_: str) -> float:
+        return 0.95
+
+    fake_module.detect = _detect
+    monkeypatch.setitem(sys.modules, "pytector", fake_module)
+
+    ok, message = validate_inputs(
+        "Regular job description content.",
+        "",
+        "",
+    )
+    assert ok is False
+    assert message
+
+
+def test_ml_detector_errors_fail_open(monkeypatch):
+    # Detector failures should not block clean inputs.
+    fake_module = types.ModuleType("pytector")
+
+    def _detect(_: str) -> float:
+        raise RuntimeError("Detector failure")
+
+    fake_module.detect = _detect
+    monkeypatch.setitem(sys.modules, "pytector", fake_module)
+
+    ok, message = validate_inputs(
+        "We need a data engineer with Spark experience.",
+        "",
+        "",
+    )
+    assert ok is True
+    assert message is None
 
 
 def test_oversized_inputs_trigger_refusal():
