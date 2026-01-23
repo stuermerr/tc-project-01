@@ -1,6 +1,14 @@
+import re
+
 from app.core.dataclasses import RequestPayload
 from app.core.prompt_builder import build_messages
 from app.core.prompts import get_prompt_variants
+
+
+def _extract_tag(content: str, label: str) -> str | None:
+    # Pull the salted tag name out of the message content.
+    match = re.search(rf"<(user-{label}-[a-f0-9]+)>", content)
+    return match.group(1) if match else None
 
 
 def test_build_messages_role_ordering():
@@ -21,8 +29,11 @@ def test_build_messages_role_ordering():
     # Validate role ordering and system prompt usage.
     assert len(messages) == 2
     assert messages[0]["role"] == "system"
-    assert messages[0]["content"] == variant.system_prompt
+    assert variant.system_prompt in messages[0]["content"]
     assert messages[1]["role"] == "user"
+    assert _extract_tag(messages[1]["content"], "job") is not None
+    assert _extract_tag(messages[1]["content"], "cv") is not None
+    assert _extract_tag(messages[1]["content"], "prompt") is not None
 
 
 def test_build_messages_missing_fields_are_consistent():
@@ -41,6 +52,22 @@ def test_build_messages_missing_fields_are_consistent():
     content = messages[1]["content"]
 
     # Ensure placeholders are consistent across missing fields.
-    assert "Job Description:\nNot provided." in content
-    assert "CV / Resume:\nNot provided." in content
-    assert "User Prompt:\nNot provided." in content
+    assert "Not provided." in content
+    assert content.count("Not provided.") == 3
+
+
+def test_build_messages_generate_unique_salts():
+    # Different calls should yield distinct salted tags.
+    variant = get_prompt_variants()[0]
+    payload = RequestPayload(
+        job_description="Role.",
+        cv_text="CV.",
+        user_prompt="Prompt.",
+        prompt_variant_id=variant.id,
+        temperature=0.2,
+    )
+
+    first = build_messages(payload, variant)[1]["content"]
+    second = build_messages(payload, variant)[1]["content"]
+
+    assert _extract_tag(first, "job") != _extract_tag(second, "job")

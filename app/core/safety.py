@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import secrets
 from typing import Iterable
 
 # Length limits keep payloads bounded for safety and cost.
@@ -55,6 +56,23 @@ def _check_control_characters(label: str, text: str) -> tuple[bool, str | None]:
             "Please remove them and try again."
         )
     return True, None
+
+
+def generate_salt(num_bytes: int = 6) -> str:
+    """Return a random hex salt for per-request tag names."""
+
+    # Use cryptographic randomness so tag names are not guessable.
+    return secrets.token_hex(num_bytes)
+
+
+def build_salted_tag_names(salt: str) -> dict[str, str]:
+    """Build per-request tag names for untrusted user input."""
+
+    return {
+        "job_description": f"user-job-{salt}",
+        "cv_text": f"user-cv-{salt}",
+        "user_prompt": f"user-prompt-{salt}",
+    }
 
 
 def _is_high_confidence(result: object) -> bool:
