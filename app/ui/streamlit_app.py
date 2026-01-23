@@ -16,6 +16,7 @@ def _build_payload(
     prompt_variant_id: int,
     temperature: float,
 ) -> RequestPayload:
+    # Bundle raw UI inputs into a typed payload for the controller.
     return RequestPayload(
         job_description=job_description,
         cv_text=cv_text,
@@ -26,10 +27,12 @@ def _build_payload(
 
 
 def main() -> None:
+    # Configure the page once at startup to control layout and branding.
     st.set_page_config(page_title="Interview Practice", page_icon="🧩", layout="wide")
     st.title("Interview Practice App")
     st.caption("Generate tailored interview questions from your JD, CV, and focus areas.")
 
+    # Load prompt variants to populate the dropdown.
     variants = get_prompt_variants()
     # Map labels to ids so the UI stays readable while the payload stays numeric.
     variant_labels = {variant.name: variant.id for variant in variants}
@@ -37,6 +40,7 @@ def main() -> None:
     # Two-column layout keeps the three text inputs visible at once.
     col_left, col_right = st.columns(2)
     with col_left:
+        # Capture JD and CV inputs on the left to match typical reading order.
         job_description = st.text_area(
             "Job Description (optional)",
             height=220,
@@ -48,6 +52,7 @@ def main() -> None:
             placeholder="Paste your CV or resume here.",
         )
     with col_right:
+        # Capture user prompt and settings on the right for quick tuning.
         user_prompt = st.text_area(
             "User Prompt (optional)",
             height=220,
@@ -67,8 +72,10 @@ def main() -> None:
 
     st.divider()
 
+    # Trigger a single generation run on button click.
     generate_clicked = st.button("Generate 5 Questions", type="primary")
     if generate_clicked:
+        # Build the payload once so the controller gets a stable snapshot.
         payload = _build_payload(
             job_description=job_description,
             cv_text=cv_text,
@@ -77,13 +84,16 @@ def main() -> None:
             temperature=temperature,
         )
 
+        # Show a spinner while the model call runs.
         with st.spinner("Generating questions..."):
             ok, response = generate_questions(payload)
 
         if not ok:
+            # Surface safety refusals or validation errors to the user.
             st.error(response)
             return
 
+        # Render the structured response returned by the controller.
         st.subheader("Generated Questions")
         st.markdown(response)
 
@@ -94,4 +104,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # Allow `python streamlit_app.py` for local debugging.
     main()

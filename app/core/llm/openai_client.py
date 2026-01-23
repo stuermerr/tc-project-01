@@ -7,6 +7,7 @@ from typing import Any
 # Default model for Sprint 1; can be swapped later if needed.
 DEFAULT_MODEL = "gpt-4o-mini"
 
+# Optional import so tests can run without the dependency installed.
 try:
     from openai import OpenAI
 except ImportError:  # pragma: no cover - exercised when dependency is missing
@@ -23,10 +24,12 @@ def generate_completion(messages: list[dict[str, str]], temperature: float) -> s
             "Install it with `pip install openai`."
         )
 
+    # Build the client and forward the minimal payload we control.
     client = OpenAI()
     response: Any = client.chat.completions.create(
         model=DEFAULT_MODEL,
         messages=messages,
         temperature=temperature,
     )
+    # Extract the first response choice for a single-turn UI.
     return response.choices[0].message.content or ""

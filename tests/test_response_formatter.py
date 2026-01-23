@@ -3,14 +3,17 @@ import re
 from app.core.dataclasses import RequestPayload
 from app.core.response_formatter import format_response
 
+# Shared tag matcher for counting questions.
 _TAG_PATTERN = re.compile(r"\[[^\]]+\]")
 
 
 def _count_tagged_questions(text: str) -> int:
+    # Count lines that include a bracketed tag.
     return sum(1 for line in text.splitlines() if _TAG_PATTERN.search(line))
 
 
 def test_format_response_includes_required_sections_and_questions():
+    # Provide full inputs so alignments and gaps are expected.
     payload = RequestPayload(
         job_description="Looking for a backend engineer with Python API experience.",
         cv_text="Built Python APIs and maintained production services.",
@@ -28,6 +31,7 @@ def test_format_response_includes_required_sections_and_questions():
         ]
     )
 
+    # Format the response and verify the required sections exist.
     result = format_response(raw_text, payload)
 
     assert "Target Role Context" in result
@@ -39,6 +43,7 @@ def test_format_response_includes_required_sections_and_questions():
 
 
 def test_format_response_missing_cv_includes_note_and_no_alignments():
+    # Omit JD and CV to trigger the missing-data branches.
     payload = RequestPayload(
         job_description="",
         cv_text="",
@@ -56,6 +61,7 @@ def test_format_response_missing_cv_includes_note_and_no_alignments():
         ]
     )
 
+    # Verify that a CV note is added and alignments are omitted.
     result = format_response(raw_text, payload)
 
     assert "CV Note" in result

@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import Iterable
 
+# Length limits keep payloads bounded for safety and cost.
 MAX_JOB_DESCRIPTION_LENGTH = 3000
 MAX_CV_LENGTH = 3000
 MAX_USER_PROMPT_LENGTH = 2000
@@ -28,11 +29,13 @@ _INJECTION_PATTERNS: Iterable[re.Pattern[str]] = (
 
 
 def _matches_injection(text: str) -> bool:
+    # Normalize case so pattern checks are consistent.
     lowered = text.lower()
     return any(pattern.search(lowered) for pattern in _INJECTION_PATTERNS)
 
 
 def _check_length(label: str, text: str, limit: int) -> tuple[bool, str | None]:
+    # Fail early on oversized inputs so the UI can show a clear message.
     if len(text) > limit:
         return False, (
             f"{label} is too long ({len(text)} chars). Max allowed is {limit}."
@@ -45,6 +48,7 @@ def validate_inputs(
 ) -> tuple[bool, str | None]:
     """Validate user inputs and reject unsafe requests."""
 
+    # Validate each field independently to give precise feedback.
     for label, text, limit in (
         ("Job description", job_description, MAX_JOB_DESCRIPTION_LENGTH),
         ("CV", cv_text, MAX_CV_LENGTH),
@@ -62,4 +66,5 @@ def validate_inputs(
             "Please remove them and try again."
         )
 
+    # No issues found; allow the request to proceed.
     return True, None

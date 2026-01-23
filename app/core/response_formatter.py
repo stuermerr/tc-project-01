@@ -7,10 +7,12 @@ from collections import Counter
 
 from app.core.dataclasses import RequestPayload
 
+# Precompiled patterns keep repeated parsing fast and consistent.
 _TAG_PATTERN = re.compile(r"\[[^\]]+\]")
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 _TOKEN_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9+#-]{2,}")
 
+# Common words to ignore when extracting keywords.
 _STOPWORDS = {
     "the",
     "and",
@@ -47,6 +49,7 @@ _STOPWORDS = {
     "candidate",
 }
 
+# Fallback questions keep output valid when the model under-delivers.
 _DEFAULT_QUESTIONS = [
     "[Technical] Walk through a recent system you built and the trade-offs you made.",
     "[Behavioral] Tell me about a time you resolved a high-pressure incident.",
@@ -57,6 +60,7 @@ _DEFAULT_QUESTIONS = [
 
 
 def _strip_list_prefix(line: str) -> str:
+    # Remove bullets/numbering so questions can be matched cleanly.
     return re.sub(r"^\s*(?:[-*]|\d+[.)])\s*", "", line).strip()
 
 
@@ -73,6 +77,7 @@ def _extract_tagged_questions(raw_text: str) -> list[str]:
 
 
 def _ensure_tagged(question: str) -> str:
+    # Add a fallback tag to keep output consistent with the contract.
     if _TAG_PATTERN.search(question):
         return question
     return f"[General] {question}"
@@ -145,12 +150,14 @@ def _top_keywords(text: str, limit: int = 8) -> list[str]:
 
 
 def _format_section(title: str, lines: list[str]) -> str:
+    # Skip empty sections to keep output concise.
     if not lines:
         return ""
     return "\n".join([title, *lines])
 
 
 def _has_required_headings(raw_text: str, payload: RequestPayload) -> bool:
+    # Check whether the model already produced the required headings.
     lowered = raw_text.lower()
     required = {
         "target role context",
@@ -168,20 +175,25 @@ def _has_required_headings(raw_text: str, payload: RequestPayload) -> bool:
 def format_response(raw_text: str, payload: RequestPayload) -> str:
     """Ensure the response contains required sections and exactly 5 questions."""
 
+    # Normalize the question list to exactly five items.
     questions = _ensure_five_questions(raw_text)
     if _has_required_headings(raw_text, payload) and len(questions) == 5:
         # Preserve the model response when it already meets the contract.
         return raw_text.strip()
 
+    # Build a fresh response that matches the required structure.
     sections: list[str] = []
 
     if payload.job_description.strip():
+        # Summarize the JD to show role context without leaking long text.
         target_role_lines = _summarize_job_description(payload.job_description)
     else:
+        # Prompt for a target role when the JD is missing.
         target_role_lines = ["- What is the target role you want to practice for?"]
     sections.append(_format_section("Target Role Context", target_role_lines))
 
     if not payload.cv_text.strip():
+        # Encourage CV paste only when it's missing.
         sections.append(
             _format_section(
                 "CV Note",
@@ -190,6 +202,7 @@ def format_response(raw_text: str, payload: RequestPayload) -> str:
         )
 
     if payload.cv_text.strip() and payload.job_description.strip():
+        # Highlight shared keywords as a lightweight alignment signal.
         jd_keywords = _top_keywords(payload.job_description)
         cv_keywords = _top_keywords(payload.cv_text)
         shared = [word for word in jd_keywords if word in cv_keywords]
@@ -200,6 +213,7 @@ def format_response(raw_text: str, payload: RequestPayload) -> str:
         sections.append(_format_section("Alignments", alignments))
 
     if payload.cv_text.strip() and payload.job_description.strip():
+        # Flag missing JD keywords as potential gaps.
         jd_keywords = _top_keywords(payload.job_description)
         cv_keywords = _top_keywords(payload.cv_text)
         gaps = [word for word in jd_keywords if word not in cv_keywords]
@@ -215,11 +229,13 @@ def format_response(raw_text: str, payload: RequestPayload) -> str:
         ]
     sections.append(_format_section("Gaps / Risk areas", gap_lines))
 
+    # Number questions for readability while keeping tags intact.
     question_lines = [
         f"{index}. {_ensure_tagged(question)}" for index, question in enumerate(questions, 1)
     ]
     sections.append(_format_section("Interview Questions", question_lines))
 
+    # Provide follow-up suggestions that fit the current inputs.
     suggestions = [
         "Paste your CV for better alignment-based questions.",
         "Tell me which requirements you rate lowest (0–5).",
@@ -232,4 +248,5 @@ def format_response(raw_text: str, payload: RequestPayload) -> str:
         _format_section("Next-step suggestions", [f"- {item}" for item in suggestions[:4]])
     )
 
+    # Join sections with blank lines to improve readability.
     return "\n\n".join(section for section in sections if section)

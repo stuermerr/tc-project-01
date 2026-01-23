@@ -84,4 +84,5 @@ _PROMPT_VARIANTS = [
 def get_prompt_variants() -> list[PromptVariant]:
     """Return all available prompt variants."""
 
+    # Return a shallow copy to prevent accidental mutation.
     return list(_PROMPT_VARIANTS)

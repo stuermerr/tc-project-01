@@ -11,6 +11,7 @@ from app.core.safety import validate_inputs
 
 
 def _select_variant(payload: RequestPayload):
+    # Match the requested variant id, falling back to the first for safety.
     variants = get_prompt_variants()
     for variant in variants:
         if variant.id == payload.prompt_variant_id:
@@ -22,12 +23,14 @@ def _select_variant(payload: RequestPayload):
 def generate_questions(payload: RequestPayload) -> tuple[bool, str]:
     """Generate interview questions or return a refusal message."""
 
+    # Validate inputs before any model call.
     ok, refusal = validate_inputs(
         payload.job_description, payload.cv_text, payload.user_prompt
     )
     if not ok:
         return False, refusal or "Input validation failed."
 
+    # Assemble prompts, call the model, and enforce the response contract.
     variant = _select_variant(payload)
     messages = build_messages(payload, variant)
     raw_text = generate_completion(messages, payload.temperature)

@@ -3,15 +3,19 @@ from app.core.dataclasses import RequestPayload
 
 
 def test_generate_questions_short_circuits_on_safety(monkeypatch):
+    # Fake a safety failure to ensure the controller stops early.
     def _fail_validation(job_description: str, cv_text: str, user_prompt: str):
         return False, "blocked"
 
+    # Guard against accidental LLM calls in the refusal path.
     def _unexpected_call(*args, **kwargs):  # pragma: no cover - should not be called
         raise AssertionError("LLM should not be called when validation fails")
 
+    # Patch dependencies so the test only exercises controller flow.
     monkeypatch.setattr("app.core.orchestration.validate_inputs", _fail_validation)
     monkeypatch.setattr("app.core.orchestration.generate_completion", _unexpected_call)
 
+    # Build a minimal payload that triggers the safety failure.
     payload = RequestPayload(
         job_description="bad",
         cv_text="",
@@ -20,6 +24,7 @@ def test_generate_questions_short_circuits_on_safety(monkeypatch):
         temperature=0.2,
     )
 
+    # Execute the controller and capture the refusal message.
     ok, message = generate_questions(payload)
 
     assert ok is False
@@ -27,22 +32,27 @@ def test_generate_questions_short_circuits_on_safety(monkeypatch):
 
 
 def test_generate_questions_success_path(monkeypatch):
+    # Allow validation to pass so we can test the happy path.
     def _pass_validation(job_description: str, cv_text: str, user_prompt: str):
         return True, None
 
+    # Fake the LLM response to keep the test deterministic.
     def _fake_completion(messages, temperature):
         assert messages
         assert temperature == 0.4
         return "raw-response"
 
+    # Fake the formatter to confirm orchestration order.
     def _fake_formatter(raw_text: str, payload: RequestPayload):
         assert raw_text == "raw-response"
         return "formatted-response"
 
+    # Patch dependencies to isolate the controller behavior.
     monkeypatch.setattr("app.core.orchestration.validate_inputs", _pass_validation)
     monkeypatch.setattr("app.core.orchestration.generate_completion", _fake_completion)
     monkeypatch.setattr("app.core.orchestration.format_response", _fake_formatter)
 
+    # Build a valid payload for the success path.
     payload = RequestPayload(
         job_description="JD",
         cv_text="CV",
@@ -51,6 +61,7 @@ def test_generate_questions_success_path(monkeypatch):
         temperature=0.4,
     )
 
+    # Execute the controller and verify the formatted result.
     ok, message = generate_questions(payload)
 
     assert ok is True

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 # Simple containers to keep cross-module interfaces explicit.
 
 
+# Immutable payload container keeps request data consistent across layers.
 @dataclass(frozen=True)
 class RequestPayload:
     """Inputs required to generate interview questions."""
@@ -18,6 +19,7 @@ class RequestPayload:
     temperature: float
 
 
+# Immutable variant container avoids accidental prompt mutation.
 @dataclass(frozen=True)
 class PromptVariant:
     """System prompt variant metadata and content."""
