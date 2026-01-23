@@ -10,7 +10,7 @@ from typing import Iterable
 
 # Length limits keep payloads bounded for safety and cost.
 MAX_JOB_DESCRIPTION_LENGTH = 6000
-MAX_CV_LENGTH = 3000
+MAX_CV_LENGTH = 4000
 MAX_USER_PROMPT_LENGTH = 2000
 
 # Heuristic patterns for common prompt-injection attempts.

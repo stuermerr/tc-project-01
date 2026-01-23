@@ -1,4 +1,5 @@
 from app.core.llm import openai_client
+from app.core.model_catalog import get_allowed_models
 from app.core.structured_output import STRUCTURED_OUTPUT_SCHEMA
 
 
@@ -73,3 +74,29 @@ def test_generate_completion_builds_payload(monkeypatch):
     assert last_kwargs["temperature"] == 0.4
     assert last_kwargs["response_format"]["type"] == "json_schema"
     assert last_kwargs["response_format"]["json_schema"] == STRUCTURED_OUTPUT_SCHEMA
+
+
+def test_generate_completion_uses_model_override(monkeypatch):
+    # Track client creation to inspect the request parameters.
+    created_clients: list[_DummyOpenAI] = []
+
+    # Provide a factory so the wrapper uses our dummy client.
+    def _factory():
+        return _DummyOpenAI(created_clients)
+
+    monkeypatch.setattr(openai_client, "OpenAI", _factory)
+    messages = [
+        {"role": "system", "content": "system"},
+        {"role": "user", "content": "user"},
+    ]
+    override_model = get_allowed_models()[1]
+
+    # Call the wrapper with an explicit model override.
+    ok, result = openai_client.generate_completion(
+        messages, temperature=0.2, model_name=override_model
+    )
+
+    assert ok is True
+    assert result == "mocked-response"
+    last_kwargs = created_clients[0].chat.completions.last_kwargs
+    assert last_kwargs["model"] == override_model

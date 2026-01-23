@@ -5,12 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from app.core.model_catalog import DEFAULT_MODEL
 from app.core.structured_output import STRUCTURED_OUTPUT_SCHEMA
 
 _DOTENV_LOADED = False
-
-# Default model for Sprint 1; can be swapped later if needed.
-DEFAULT_MODEL = "gpt-4o-mini"
 
 # Optional import so tests can run without the dependency installed.
 try:
@@ -38,7 +36,9 @@ def _load_dotenv_once() -> None:
 
 
 def generate_completion(
-    messages: list[dict[str, str]], temperature: float
+    messages: list[dict[str, str]],
+    temperature: float,
+    model_name: str | None = None,
 ) -> tuple[bool, str]:
     """Generate a completion using the configured OpenAI model."""
 
@@ -52,11 +52,14 @@ def generate_completion(
             "Install it with `pip install openai`."
         )
 
+    # Fall back to the default model when no override is provided.
+    selected_model = model_name or DEFAULT_MODEL
+
     # Build the client and forward the minimal payload we control.
     _LOGGER.info(
         "openai_request",
         extra={
-            "model": DEFAULT_MODEL,
+            "model": selected_model,
             "temperature": temperature,
             "message_count": len(messages),
             "messages_total_length": sum(len(msg["content"]) for msg in messages),
@@ -64,7 +67,7 @@ def generate_completion(
     )
     client = OpenAI()
     response: Any = client.chat.completions.create(
-        model=DEFAULT_MODEL,
+        model=selected_model,
         messages=messages,
         temperature=temperature,
         # Ask the model to return JSON that matches our schema instead of free-form text.

@@ -37,7 +37,7 @@ def test_generate_questions_success_path(monkeypatch):
         return True, None
 
     # Fake the LLM response to keep the test deterministic.
-    def _fake_completion(messages, temperature):
+    def _fake_completion(messages, temperature, model_name=None):
         assert messages
         assert temperature == 0.4
         return True, (

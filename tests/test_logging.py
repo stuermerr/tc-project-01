@@ -47,7 +47,7 @@ def test_orchestration_logs_metadata_without_raw_text(monkeypatch, caplog):
     def _pass_validation(job_description: str, cv_text: str, user_prompt: str):
         return True, None
 
-    def _fake_completion(messages, temperature):
+    def _fake_completion(messages, temperature, model_name=None):
         return True, (
             '{"target_role_context":["Role summary"],'
             '"cv_note":null,'

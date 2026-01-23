@@ -9,6 +9,7 @@ import streamlit as st
 
 from app.core.dataclasses import RequestPayload
 from app.core.logging_config import setup_logging
+from app.core.model_catalog import DEFAULT_MODEL, get_allowed_models
 from app.core.orchestration import generate_questions
 from app.core.prompts import get_prompt_variants
 from app.core.safety import check_rate_limit
@@ -22,6 +23,7 @@ def _build_payload(
     user_prompt: str,
     prompt_variant_id: int,
     temperature: float,
+    model_name: str,
 ) -> RequestPayload:
     # Bundle raw UI inputs into a typed payload for the controller.
     return RequestPayload(
@@ -30,6 +32,7 @@ def _build_payload(
         user_prompt=user_prompt,
         prompt_variant_id=prompt_variant_id,
         temperature=temperature,
+        model_name=model_name,
     )
 
 
@@ -45,6 +48,9 @@ def main() -> None:
     variants = get_prompt_variants()
     # Map labels to ids so the UI stays readable while the payload stays numeric.
     variant_labels = {variant.name: variant.id for variant in variants}
+
+    # Load the supported model list so the UI stays in sync with the backend.
+    allowed_models = get_allowed_models()
 
     # Two-column layout keeps the three text inputs visible at once.
     col_left, col_right = st.columns(2)
@@ -66,6 +72,14 @@ def main() -> None:
             "User Prompt (optional)",
             height=220,
             placeholder="e.g., Focus on backend APIs and system design.",
+        )
+        # Let users pick from the supported models while defaulting to the current baseline.
+        model_name = st.selectbox(
+            "Model",
+            options=allowed_models,
+            index=allowed_models.index(DEFAULT_MODEL)
+            if DEFAULT_MODEL in allowed_models
+            else 0,
         )
         selected_label = st.selectbox(
             "Prompt variant",
@@ -93,6 +107,7 @@ def main() -> None:
                 "user_prompt_length": len(user_prompt),
                 "selected_variant": selected_label,
                 "temperature": temperature,
+                "model_name": model_name,
             },
         )
         # Rate limit per session to prevent accidental rapid-fire requests.
@@ -111,6 +126,7 @@ def main() -> None:
             user_prompt=user_prompt,
             prompt_variant_id=variant_labels[selected_label],
             temperature=temperature,
+            model_name=model_name,
         )
 
         # Show a spinner while the model call runs.
@@ -133,7 +149,8 @@ def main() -> None:
 
         # Echo metadata so users can reproduce results.
         st.caption(
-            f"Prompt variant: {selected_label} | Temperature: {temperature:.2f}"
+            f"Model: {model_name} | Prompt variant: {selected_label} | "
+            f"Temperature: {temperature:.2f}"
         )
         _LOGGER.info("ui_request_success")
 

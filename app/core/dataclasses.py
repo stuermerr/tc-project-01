@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.core.model_catalog import DEFAULT_MODEL
+
 # Simple containers to keep cross-module interfaces explicit.
 
 
@@ -17,6 +19,7 @@ class RequestPayload:
     user_prompt: str
     prompt_variant_id: int
     temperature: float
+    model_name: str = DEFAULT_MODEL
 
 
 # Immutable variant container avoids accidental prompt mutation.

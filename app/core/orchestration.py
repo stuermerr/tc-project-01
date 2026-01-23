@@ -38,7 +38,7 @@ def _select_variant(payload: RequestPayload):
     return variants[0]
 
 
-def _payload_metadata(payload: RequestPayload) -> dict[str, int | float]:
+def _payload_metadata(payload: RequestPayload) -> dict[str, int | float | str]:
     """Summarize payload sizes without logging raw user text."""
 
     # Length-only metadata keeps logs useful without exposing sensitive content.
@@ -48,6 +48,7 @@ def _payload_metadata(payload: RequestPayload) -> dict[str, int | float]:
         "user_prompt_length": len(payload.user_prompt),
         "prompt_variant_id": payload.prompt_variant_id,
         "temperature": payload.temperature,
+        "model_name": payload.model_name,
     }
 
 
@@ -131,7 +132,9 @@ def generate_questions(payload: RequestPayload) -> tuple[bool, dict[str, object]
         },
     )
     llm_start = time.monotonic()
-    ok, raw_text = generate_completion(messages, payload.temperature)
+    ok, raw_text = generate_completion(
+        messages, payload.temperature, model_name=payload.model_name
+    )
     llm_duration_ms = int((time.monotonic() - llm_start) * 1000)
     _LOGGER.info(
         "llm_response_received",
