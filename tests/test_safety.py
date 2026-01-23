@@ -5,6 +5,7 @@ from app.core.safety import (
     MAX_CV_LENGTH,
     MAX_JOB_DESCRIPTION_LENGTH,
     MAX_USER_PROMPT_LENGTH,
+    record_safety_event,
     sanitize_output,
     validate_output,
     validate_inputs,
@@ -124,6 +125,63 @@ def test_sanitize_output_removes_internal_tags_and_redacts_prompt():
     sanitized = sanitize_output(raw)
     assert "<user-cv-acde>" not in sanitized
     assert "system prompt" not in sanitized.lower()
+
+
+def test_record_safety_event_increments_counts(monkeypatch):
+    # Ensure the event counter increments for repeat events.
+    events: list[tuple[str, dict | None, int]] = []
+
+    def _capture(_: str, extra: dict) -> None:
+        events.append((extra["event_type"], extra["details"], extra["count"]))
+
+    monkeypatch.setattr("app.core.safety._SAFETY_LOGGER.info", _capture)
+
+    record_safety_event("input_length_exceeded", {"field": "JD", "length": 10})
+    record_safety_event("input_length_exceeded", {"field": "JD", "length": 11})
+
+    assert events[-1][0] == "input_length_exceeded"
+    assert events[-1][2] == 2
+
+
+def test_validate_inputs_logs_length_event(monkeypatch):
+    # Oversized JD should trigger a safety event.
+    events: list[str] = []
+
+    def _record(event_type: str, _: dict | None = None) -> None:
+        events.append(event_type)
+
+    monkeypatch.setattr("app.core.safety.record_safety_event", _record)
+
+    ok, _ = validate_inputs("a" * (MAX_JOB_DESCRIPTION_LENGTH + 1), "", "")
+    assert ok is False
+    assert "input_length_exceeded" in events
+
+
+def test_validate_output_logs_block_event(monkeypatch):
+    # Output validation should record a block event.
+    events: list[str] = []
+
+    def _record(event_type: str, _: dict | None = None) -> None:
+        events.append(event_type)
+
+    monkeypatch.setattr("app.core.safety.record_safety_event", _record)
+
+    ok, _ = validate_output("Leaked <user-prompt-acde>data</user-prompt-acde>.")
+    assert ok is False
+    assert "output_blocked" in events
+
+
+def test_sanitize_output_logs_event(monkeypatch):
+    # Sanitization should record an event when changes are made.
+    events: list[str] = []
+
+    def _record(event_type: str, _: dict | None = None) -> None:
+        events.append(event_type)
+
+    monkeypatch.setattr("app.core.safety.record_safety_event", _record)
+
+    sanitize_output("Leaked <user-job-acde>data</user-job-acde>.")
+    assert "output_sanitized" in events
 
 
 def test_clean_inputs_pass():

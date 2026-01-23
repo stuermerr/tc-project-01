@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import secrets
+import logging
 from typing import Iterable
 
 # Length limits keep payloads bounded for safety and cost.
@@ -35,6 +36,8 @@ _OUTPUT_FORBIDDEN_PATTERNS: Iterable[re.Pattern[str]] = (
     re.compile(r"</?user-(job|cv|prompt)-[a-f0-9]+>", re.IGNORECASE),
     re.compile(r"\bsystem prompt\b", re.IGNORECASE),
 )
+_SAFETY_EVENT_COUNTS: dict[str, int] = {}
+_SAFETY_LOGGER = logging.getLogger(__name__)
 
 
 def _matches_injection(text: str) -> bool:
@@ -62,11 +65,39 @@ def _check_control_characters(label: str, text: str) -> tuple[bool, str | None]:
     return True, None
 
 
+def _redact_details(details: dict | None) -> dict | None:
+    # Drop or summarize details to avoid logging sensitive user text.
+    if not details:
+        return None
+    redacted: dict[str, object] = {}
+    for key, value in details.items():
+        if isinstance(value, str):
+            redacted[key] = "<redacted>"
+        else:
+            redacted[key] = value
+    return redacted
+
+
+def record_safety_event(event_type: str, details: dict | None = None) -> None:
+    """Record a safety event with privacy-aware logging."""
+
+    _SAFETY_EVENT_COUNTS[event_type] = _SAFETY_EVENT_COUNTS.get(event_type, 0) + 1
+    _SAFETY_LOGGER.info(
+        "safety_event",
+        extra={
+            "event_type": event_type,
+            "details": _redact_details(details),
+            "count": _SAFETY_EVENT_COUNTS[event_type],
+        },
+    )
+
+
 def validate_output(raw_text: str) -> tuple[bool, str | None]:
     """Detect unsafe model output that leaks internal details."""
 
     # Block outputs that include internal tags or system prompt references.
     if any(pattern.search(raw_text) for pattern in _OUTPUT_FORBIDDEN_PATTERNS):
+        record_safety_event("output_blocked", {"reason": "internal_leak"})
         return False, (
             "The model output contained internal instructions or tags and was blocked."
         )
@@ -83,6 +114,8 @@ def sanitize_output(raw_text: str) -> str:
     )
     # Redact explicit mentions of the system prompt.
     sanitized = re.sub(r"(?i)\bsystem prompt\b", "[redacted]", sanitized)
+    if sanitized != raw_text:
+        record_safety_event("output_sanitized")
     return sanitized
 
 
@@ -151,14 +184,23 @@ def validate_inputs(
     ):
         ok, message = _check_length(label, text, limit)
         if not ok:
+            record_safety_event(
+                "input_length_exceeded",
+                {"field": label, "length": len(text), "limit": limit},
+            )
             return False, message
         ok, message = _check_control_characters(label, text)
         if not ok:
+            record_safety_event(
+                "input_control_characters",
+                {"field": label, "length": len(text)},
+            )
             return False, message
 
     # Check combined inputs so cross-field instructions are still caught.
     combined = "\n".join([job_description, cv_text, user_prompt])
     if _matches_injection(combined):
+        record_safety_event("input_injection_detected")
         return False, (
             "Input appears to include prompt-injection instructions. "
             "Please remove them and try again."
@@ -166,6 +208,7 @@ def validate_inputs(
 
     # Run optional ML-based detection and fail closed on high-confidence hits.
     if _ml_injection_check(combined):
+        record_safety_event("input_ml_injection_detected")
         return False, (
             "Input appears to be a prompt-injection attempt. "
             "Please remove it and try again."
