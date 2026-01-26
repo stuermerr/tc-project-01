@@ -11,8 +11,8 @@ from app.core.dataclasses import RequestPayload
 from app.core.model_catalog import (
     DEFAULT_MODEL,
     DEFAULT_REASONING_EFFORT,
-    REASONING_EFFORT_LEVELS,
     get_allowed_models,
+    get_reasoning_effort_options,
     is_gpt5_model,
 )
 from app.core.orchestration import generate_questions
@@ -94,10 +94,13 @@ def render_classic_ui() -> None:
         with settings_mid:
             if is_gpt5_model(model_name):
                 # GPT-5 models use reasoning effort instead of temperature.
+                effort_options = get_reasoning_effort_options(model_name)
                 reasoning_effort = st.selectbox(
                     "Reasoning effort",
-                    options=REASONING_EFFORT_LEVELS,
-                    index=REASONING_EFFORT_LEVELS.index(DEFAULT_REASONING_EFFORT),
+                    options=effort_options or [DEFAULT_REASONING_EFFORT],
+                    index=(effort_options or [DEFAULT_REASONING_EFFORT]).index(
+                        DEFAULT_REASONING_EFFORT
+                    ),
                 )
                 temperature = None
             else:

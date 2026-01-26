@@ -12,7 +12,10 @@ ALLOWED_MODELS: list[str] = [
 # Default remains the same as the current app behavior.
 DEFAULT_MODEL = ALLOWED_MODELS[0]
 GPT5_MODELS = {"gpt-5-nano", "gpt-5.2-chat-latest"}
-REASONING_EFFORT_LEVELS = ["low", "medium", "high"]
+_REASONING_EFFORT_BY_MODEL = {
+    "gpt-5-nano": ["medium"],
+    "gpt-5.2-chat-latest": ["medium"],
+}
 DEFAULT_REASONING_EFFORT = "medium"
 
 
@@ -27,3 +30,11 @@ def is_gpt5_model(model_name: str) -> bool:
     """Return True when the model uses GPT-5 reasoning controls."""
 
     return model_name in GPT5_MODELS
+
+
+def get_reasoning_effort_options(model_name: str) -> list[str]:
+    """Return the allowed reasoning effort values for the given model."""
+
+    if model_name in _REASONING_EFFORT_BY_MODEL:
+        return list(_REASONING_EFFORT_BY_MODEL[model_name])
+    return []

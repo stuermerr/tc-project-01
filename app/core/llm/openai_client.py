@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.core.model_catalog import DEFAULT_MODEL, is_gpt5_model
+from app.core.model_catalog import DEFAULT_MODEL, get_reasoning_effort_options, is_gpt5_model
 from app.core.structured_output import STRUCTURED_OUTPUT_SCHEMA
 
 _DOTENV_LOADED = False
@@ -79,7 +79,11 @@ def _request_completion(
     if response_format:
         request_payload["response_format"] = response_format
     if reasoning_effort and is_gpt5_model(selected_model):
-        request_payload["reasoning_effort"] = reasoning_effort
+        allowed_efforts = get_reasoning_effort_options(selected_model)
+        if reasoning_effort not in allowed_efforts and allowed_efforts:
+            reasoning_effort = allowed_efforts[0]
+        if reasoning_effort:
+            request_payload["reasoning_effort"] = reasoning_effort
     response = client.chat.completions.create(**request_payload)
     # Extract the first response choice for a single-turn UI.
     message = response.choices[0].message
