@@ -25,9 +25,12 @@ class _DummyCompletions:
     # Record the last payload so the test can assert it.
     def __init__(self) -> None:
         self.last_kwargs: dict[str, object] | None = None
+        self.raise_on_reasoning_effort: bool = False
 
     # Return a deterministic response for testing.
     def create(self, **kwargs):
+        if self.raise_on_reasoning_effort and "reasoning_effort" in kwargs:
+            raise _DummyBadRequestError("reasoning_effort unsupported")
         self.last_kwargs = kwargs
         return _DummyResponse("mocked-response")
 
@@ -43,6 +46,10 @@ class _DummyOpenAI:
     def __init__(self, created_clients: list["_DummyOpenAI"]) -> None:
         self.chat = _DummyChat()
         created_clients.append(self)
+
+
+class _DummyBadRequestError(Exception):
+    """Stand-in for OpenAI BadRequestError in tests."""
 
 
 def test_generate_completion_builds_payload(monkeypatch):
@@ -186,3 +193,36 @@ def test_gpt5_models_accept_reasoning_effort_options(monkeypatch):
             assert last_kwargs["model"] == model_name
             assert "temperature" not in last_kwargs
             assert last_kwargs["reasoning_effort"] == effort
+
+
+def test_gpt52_chat_latest_falls_back_to_verbosity(monkeypatch):
+    # Track client creation to inspect the request parameters.
+    created_clients: list[_DummyOpenAI] = []
+    raise_on_reasoning = {"enabled": False}
+
+    def _factory():
+        client = _DummyOpenAI(created_clients)
+        client.chat.completions.raise_on_reasoning_effort = raise_on_reasoning["enabled"]
+        return client
+
+    monkeypatch.setattr(openai_client, "OpenAI", _factory)
+    monkeypatch.setattr(openai_client, "BadRequestError", _DummyBadRequestError)
+
+    messages = [
+        {"role": "system", "content": "system"},
+        {"role": "user", "content": "user"},
+    ]
+
+    raise_on_reasoning["enabled"] = True
+    ok, result = openai_client.generate_chat_completion(
+        messages,
+        temperature=None,
+        model_name="gpt-5.2-chat-latest",
+        reasoning_effort="low",
+    )
+
+    assert ok is True
+    assert result == "mocked-response"
+    last_kwargs = client.chat.completions.last_kwargs
+    assert "reasoning_effort" not in last_kwargs
+    assert last_kwargs["verbosity"] == "low"

@@ -12,9 +12,10 @@ _DOTENV_LOADED = False
 
 # Optional import so tests can run without the dependency installed.
 try:
-    from openai import OpenAI
+    from openai import BadRequestError, OpenAI
 except ImportError:  # pragma: no cover - exercised when dependency is missing
     OpenAI = None
+    BadRequestError = None
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -84,7 +85,35 @@ def _request_completion(
             reasoning_effort = allowed_efforts[0]
         if reasoning_effort:
             request_payload["reasoning_effort"] = reasoning_effort
-    response = client.chat.completions.create(**request_payload)
+    try:
+        response = client.chat.completions.create(**request_payload)
+    except Exception as exc:  # pragma: no cover - network error handling
+        if (
+            BadRequestError is not None
+            and isinstance(exc, BadRequestError)
+            and selected_model == "gpt-5.2-chat-latest"
+            and "reasoning_effort" in str(exc)
+        ):
+            # Fall back to verbosity when reasoning_effort is rejected for chat-latest.
+            fallback_payload = dict(request_payload)
+            effort = fallback_payload.pop("reasoning_effort", None)
+            verbosity_map = {
+                "minimal": "low",
+                "low": "low",
+                "medium": "medium",
+                "high": "high",
+                "none": "low",
+            }
+            verbosity = verbosity_map.get(effort)
+            if verbosity:
+                fallback_payload["verbosity"] = verbosity
+            _LOGGER.info(
+                "openai_reasoning_effort_fallback",
+                extra={"model": selected_model, "verbosity": verbosity or "default"},
+            )
+            response = client.chat.completions.create(**fallback_payload)
+        else:
+            raise
     # Extract the first response choice for a single-turn UI.
     message = response.choices[0].message
     refusal = getattr(message, "refusal", None)
