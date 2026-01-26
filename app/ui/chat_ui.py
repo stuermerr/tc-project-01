@@ -15,10 +15,9 @@ from app.core.chat_history import (
 )
 from app.core.dataclasses import RequestPayload
 from app.core.model_catalog import DEFAULT_MODEL, get_allowed_models
-from app.core.orchestration import generate_questions
-from app.core.prompts import get_prompt_variants
+from app.core.orchestration import generate_chat_response
+from app.core.prompts import get_chat_prompt_variants
 from app.core.safety import check_rate_limit
-from app.core.structured_output import render_markdown_from_response
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -60,10 +59,10 @@ def render_chat_ui() -> None:
     """Render the chat experience without setting page config."""
 
     st.title("Interview Preparation Chat")
-    st.caption("Chat with the app to generate structured interview questions.")
+    st.caption("Chat with the app for coaching, feedback, and practice questions.")
 
     # Load prompt variants to populate the dropdown.
-    variants = get_prompt_variants()
+    variants = get_chat_prompt_variants()
     # Map labels to ids so the UI stays readable while the payload stays numeric.
     variant_labels = {variant.name: variant.id for variant in variants}
     # Load the supported model list so the UI stays in sync with the backend.
@@ -119,7 +118,7 @@ def render_chat_ui() -> None:
             st.markdown(message.content)
 
     # Use the chat input so Enter sends the next message.
-    user_input = st.chat_input("Ask for interview questions or focus areas")
+    user_input = st.chat_input("Ask for coaching, feedback, or practice questions")
 
     if not user_input:
         return
@@ -166,8 +165,8 @@ def render_chat_ui() -> None:
 
     # Generate the assistant response and render it in the chat.
     with st.chat_message("assistant"):
-        with st.spinner("Generating questions..."):
-            ok, response = generate_questions(payload)
+        with st.spinner("Drafting response..."):
+            ok, response = generate_chat_response(payload)
 
         if not ok:
             _LOGGER.info("chat_request_blocked")
@@ -175,10 +174,7 @@ def render_chat_ui() -> None:
             append_chat_message(messages, role="assistant", content=str(response))
             return
 
-        if isinstance(response, dict):
-            content = render_markdown_from_response(response)
-        else:
-            content = str(response)
+        content = str(response)
 
         st.markdown(content)
         append_chat_message(messages, role="assistant", content=content)
