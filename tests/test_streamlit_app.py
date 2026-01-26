@@ -23,13 +23,8 @@ def test_langchain_only_app_import_smoke():
     # Skip when Streamlit isn't installed so CI stays green.
     pytest.importorskip("streamlit")
 
-    page_path = (
-        Path(__file__).resolve().parents[1]
-        / "app"
-        / "ui"
-        / "LangChain_Only.py"
-    )
-    spec = importlib.util.spec_from_file_location("langchain_only_page", page_path)
+    page_path = Path(__file__).resolve().parents[1] / "app" / "ui" / "App.py"
+    spec = importlib.util.spec_from_file_location("app_page", page_path)
     assert spec is not None
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
