@@ -42,3 +42,22 @@ def test_streamlit_langchain_page_import_smoke():
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
+
+
+def test_streamlit_langchain_chat_page_import_smoke():
+    """Verify streamlit LangChain chat page import smoke."""
+    # Skip when Streamlit isn't installed so CI stays green.
+    pytest.importorskip("streamlit")
+
+    page_path = (
+        Path(__file__).resolve().parents[1]
+        / "app"
+        / "ui"
+        / "pages"
+        / "3_LangChain_Chat.py"
+    )
+    spec = importlib.util.spec_from_file_location("langchain_chat_page", page_path)
+    assert spec is not None
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)

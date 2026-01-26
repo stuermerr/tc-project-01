@@ -1,0 +1,20 @@
+"""LangChain chat UI rendering helpers."""
+
+from __future__ import annotations
+
+from app.core.langchain_client import generate_langchain_chat_response
+from app.core.prompts import get_chat_prompt_variants
+from app.ui.chat_ui_common import render_chat_ui
+
+
+def render_langchain_chat_ui() -> None:
+    """Render the LangChain chat experience without setting page config."""
+
+    variants = get_chat_prompt_variants()
+    render_chat_ui(
+        page_title="Interview Preparation Chat (LangChain)",
+        caption="Chat with the app using the LangChain backend.",
+        prompt_variants=variants,
+        prompt_label="Prompt variant",
+        generate_response=generate_langchain_chat_response,
+    )
