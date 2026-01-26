@@ -24,6 +24,7 @@ _CHAT_INITIAL_RESPONSE_GUIDANCE = (
     "mention gaps or risk areas if applicable, include five preparation questions, "
     "and give a few practical tips. "
     "Adapt to the user's prompt and skip irrelevant parts. "
+    "Prefer bullet points over long paragraphs and use a few relevant emojis to label sections. "
     "Do not output JSON or fixed schemas.\n"
 )
 
@@ -32,6 +33,7 @@ _CHAT_FOLLOWUP_GUIDANCE = (
     "After the initial response, behave as a free-form coach: "
     "respond directly to user answers, correct mistakes, offer tips, "
     "and score answers when helpful with a short justification. "
+    "Prefer concise bullet points and light emoji section labels for readability. "
     "Ask follow-up questions as needed.\n"
 )
 
