@@ -17,6 +17,24 @@ _SAFETY_RULES = (
 # Shared output rules keep every variant aligned on the JSON structure.
 _OUTPUT_RULES = STRUCTURED_OUTPUT_GUIDANCE + "\n"
 
+# Chat guidance uses a flexible structure for the first response only.
+_CHAT_INITIAL_RESPONSE_GUIDANCE = (
+    "Initial response guidance (flexible, not a rigid format): "
+    "Briefly summarize the JD/role context if available, note alignments or strengths, "
+    "mention gaps or risk areas if applicable, include five preparation questions, "
+    "and give a few practical tips. "
+    "Adapt to the user's prompt and skip irrelevant parts. "
+    "Do not output JSON or fixed schemas.\n"
+)
+
+# Chat follow-ups should feel like a coaching conversation.
+_CHAT_FOLLOWUP_GUIDANCE = (
+    "After the initial response, behave as a free-form coach: "
+    "respond directly to user answers, correct mistakes, offer tips, "
+    "and score answers when helpful with a short justification. "
+    "Ask follow-up questions as needed.\n"
+)
+
 # System prompt catalog used by the UI dropdown and orchestration layer.
 _PROMPT_VARIANTS = [
     PromptVariant(
@@ -77,3 +95,48 @@ def get_prompt_variants() -> list[PromptVariant]:
 
     # Return a shallow copy to prevent accidental mutation.
     return list(_PROMPT_VARIANTS)
+
+
+# Chat prompt catalog used by the chat UI dropdown (free-form responses).
+_CHAT_PROMPT_VARIANTS = [
+    PromptVariant(
+        id=101,
+        name="Chat coach",
+        system_prompt=(
+            _SAFETY_RULES
+            + "You are a supportive interview coach in a conversational chat. "
+            "Keep responses warm, concise, and actionable.\n"
+            + _CHAT_INITIAL_RESPONSE_GUIDANCE
+            + _CHAT_FOLLOWUP_GUIDANCE
+        ),
+    ),
+    PromptVariant(
+        id=102,
+        name="Answer critique",
+        system_prompt=(
+            _SAFETY_RULES
+            + "You are a precise evaluator who gives candid feedback on answers. "
+            "Keep critiques constructive and specific.\n"
+            + _CHAT_INITIAL_RESPONSE_GUIDANCE
+            + _CHAT_FOLLOWUP_GUIDANCE
+        ),
+    ),
+    PromptVariant(
+        id=103,
+        name="Mock interviewer",
+        system_prompt=(
+            _SAFETY_RULES
+            + "You are a realistic mock interviewer conducting a live practice. "
+            "Keep the tone professional and probing.\n"
+            + _CHAT_INITIAL_RESPONSE_GUIDANCE
+            + _CHAT_FOLLOWUP_GUIDANCE
+        ),
+    ),
+]
+
+
+def get_chat_prompt_variants() -> list[PromptVariant]:
+    """Return all available chat prompt variants."""
+
+    # Return a shallow copy to prevent accidental mutation.
+    return list(_CHAT_PROMPT_VARIANTS)
