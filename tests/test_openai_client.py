@@ -178,7 +178,7 @@ def test_generate_completion_uses_verbosity(monkeypatch):
     assert result == "mocked-response"
     last_kwargs = created_clients[0].chat.completions.last_kwargs
     assert last_kwargs["model"] == "gpt-5.2-chat-latest"
-    assert last_kwargs["verbosity"] == "high"
+    assert "verbosity" not in last_kwargs
 
 
 def test_generate_chat_completion_omits_response_format(monkeypatch):
@@ -249,3 +249,58 @@ def test_gpt5_models_accept_reasoning_effort_options(monkeypatch):
         assert last_kwargs["model"] == "gpt-5.2-chat-latest"
         assert last_kwargs["text"] == {"verbosity": verbosity}
         assert "temperature" not in last_kwargs
+
+
+def test_chat_latest_ignores_reasoning_effort_for_responses(monkeypatch):
+    # Track client creation to inspect the request parameters.
+    created_clients: list[_DummyOpenAI] = []
+
+    def _factory():
+        return _DummyOpenAI(created_clients)
+
+    monkeypatch.setattr(openai_client, "OpenAI", _factory)
+    messages = [
+        {"role": "system", "content": "system"},
+        {"role": "user", "content": "user"},
+    ]
+
+    ok, result = openai_client.generate_chat_completion(
+        messages,
+        temperature=None,
+        model_name="gpt-5.2-chat-latest",
+        reasoning_effort="high",
+    )
+
+    assert ok is True
+    assert result == "mocked-response"
+    last_kwargs = created_clients[-1].responses.last_kwargs
+    assert last_kwargs["model"] == "gpt-5.2-chat-latest"
+    assert "reasoning" not in last_kwargs
+    assert "text" not in last_kwargs
+
+
+def test_gpt5_nano_ignores_verbosity(monkeypatch):
+    # Track client creation so we can inspect the request parameters.
+    created_clients: list[_DummyOpenAI] = []
+
+    def _factory():
+        return _DummyOpenAI(created_clients)
+
+    monkeypatch.setattr(openai_client, "OpenAI", _factory)
+    messages = [
+        {"role": "system", "content": "system"},
+        {"role": "user", "content": "user"},
+    ]
+
+    ok, result = openai_client.generate_chat_completion(
+        messages,
+        temperature=None,
+        model_name="gpt-5-nano",
+        verbosity="high",
+    )
+
+    assert ok is True
+    assert result == "mocked-response"
+    last_kwargs = created_clients[-1].chat.completions.last_kwargs
+    assert last_kwargs["model"] == "gpt-5-nano"
+    assert "verbosity" not in last_kwargs

@@ -91,8 +91,6 @@ def _request_completion(
             reasoning_effort = allowed_efforts[0]
         if reasoning_effort:
             request_payload["reasoning_effort"] = reasoning_effort
-    if verbosity:
-        request_payload["verbosity"] = verbosity
     response = client.chat.completions.create(**request_payload)
     # Extract the first response choice for a single-turn UI.
     message = response.choices[0].message
