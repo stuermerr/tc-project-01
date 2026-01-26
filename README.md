@@ -5,7 +5,7 @@
 - 🧭 Tailors questions with optional user prompt (focus areas).
 - 💬 Chat mode supports coaching, feedback, and follow-ups.
 - 🧾 Question generator output uses structured JSON rendered as markdown.
-- 🛡️ Safety guard blocks obvious prompt injection and enforces length limits.
+- 🛡️ Safety guard blocks obvious prompt injection, illegal/harmful requests (via OpenAI moderation), and enforces length limits.
 - 🎚️ Model settings: temperature for `gpt-4o-mini`, reasoning effort for GPT-5.
 
 ## 🧰 Tech stack
