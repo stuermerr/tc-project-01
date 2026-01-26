@@ -32,7 +32,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # edit .env and set OPENAI_API_KEY=...
 
-streamlit run app/ui/streamlit_app.py
+streamlit run app/ui/Interview_Preparation_Chat.py
 ```
 
 ## 🧪 Run tests

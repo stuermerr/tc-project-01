@@ -1,4 +1,4 @@
-"""Single-page Streamlit UI for the interview practice app."""
+"""Classic single-shot UI rendering helpers."""
 
 from __future__ import annotations
 
@@ -8,15 +8,14 @@ import uuid
 import streamlit as st
 
 from app.core.dataclasses import RequestPayload
-from app.core.logging_config import setup_logging
 from app.core.model_catalog import DEFAULT_MODEL, get_allowed_models
 from app.core.orchestration import generate_questions
 from app.core.prompts import get_prompt_variants
 from app.core.safety import check_rate_limit
 from app.core.structured_output import render_markdown_from_response
-from app.ui.streamlit_chat_app import render_chat_ui
 
 _LOGGER = logging.getLogger(__name__)
+
 
 def _build_payload(
     job_description: str,
@@ -166,25 +165,3 @@ def render_classic_ui() -> None:
             f"Temperature: {temperature:.2f}"
         )
         _LOGGER.info("ui_request_success")
-
-
-def main() -> None:
-    """Streamlit entrypoint with a simple mode switcher."""
-
-    # Ensure standard console logging is active before any log calls.
-    setup_logging()
-    # Configure the page once at startup to control layout and branding.
-    st.set_page_config(page_title="Interview Practice", page_icon="🧩", layout="wide")
-
-    # Let users switch between chat and classic flows, defaulting to chat.
-    mode = st.sidebar.radio("Mode", options=["Chat", "Classic"], index=0)
-
-    if mode == "Chat":
-        render_chat_ui()
-    else:
-        render_classic_ui()
-
-
-if __name__ == "__main__":
-    # Allow `python streamlit_app.py` for local debugging.
-    main()

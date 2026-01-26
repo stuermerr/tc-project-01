@@ -1,4 +1,4 @@
-"""Chat-style Streamlit UI for the interview practice app."""
+"""Chat UI rendering helpers for the multipage Streamlit app."""
 
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ from app.core.chat_history import (
     trim_chat_history,
 )
 from app.core.dataclasses import RequestPayload
-from app.core.logging_config import setup_logging
 from app.core.model_catalog import DEFAULT_MODEL, get_allowed_models
 from app.core.orchestration import generate_questions
 from app.core.prompts import get_prompt_variants
@@ -60,7 +59,7 @@ def _history_to_prompt(messages: list[ChatMessage]) -> str:
 def render_chat_ui() -> None:
     """Render the chat experience without setting page config."""
 
-    st.title("Interview Practice Chat")
+    st.title("Interview Preparation Chat")
     st.caption("Chat with the app to generate structured interview questions.")
 
     # Load prompt variants to populate the dropdown.
@@ -70,20 +69,24 @@ def render_chat_ui() -> None:
     # Load the supported model list so the UI stays in sync with the backend.
     allowed_models = get_allowed_models()
 
-    # Keep JD/CV and settings in the sidebar so the chat stays front and center.
-    with st.sidebar:
-        st.header("Job context")
+    # Place JD and CV side-by-side at the top to match the classic layout.
+    col_left, col_right = st.columns(2)
+    with col_left:
         job_description = st.text_area(
             "Job Description (optional)",
-            height=180,
+            height=220,
             placeholder="Paste the target role description here.",
         )
+    with col_right:
         cv_text = st.text_area(
             "CV / Resume (optional)",
-            height=180,
+            height=220,
             placeholder="Paste your CV or resume here.",
         )
-        st.divider()
+
+    # Collect settings below the JD/CV inputs in a single row.
+    settings_left, settings_mid, settings_right = st.columns(3)
+    with settings_left:
         model_name = st.selectbox(
             "Model",
             options=allowed_models,
@@ -91,10 +94,12 @@ def render_chat_ui() -> None:
             if DEFAULT_MODEL in allowed_models
             else 0,
         )
+    with settings_mid:
         selected_label = st.selectbox(
             "Prompt variant",
             options=list(variant_labels.keys()),
         )
+    with settings_right:
         temperature = st.slider(
             "Temperature",
             min_value=0.0,
@@ -102,6 +107,8 @@ def render_chat_ui() -> None:
             value=0.2,
             step=0.05,
         )
+
+    st.divider()
 
     # Initialize or retrieve chat history from session state.
     messages = init_chat_history(st.session_state)
@@ -176,23 +183,3 @@ def render_chat_ui() -> None:
         st.markdown(content)
         append_chat_message(messages, role="assistant", content=content)
         _LOGGER.info("chat_request_success")
-
-
-if __name__ == "__main__":
-    # Ensure standard console logging is active before any log calls.
-    setup_logging()
-    # Configure the page once at startup to control layout and branding.
-    st.set_page_config(page_title="Interview Practice Chat", page_icon="🧩", layout="wide")
-    render_chat_ui()
-
-
-def main() -> None:
-    """Entry point for Streamlit to render the chat UI standalone."""
-
-    # Ensure standard console logging is active before any log calls.
-    setup_logging()
-    # Configure the page once at startup to control layout and branding.
-    st.set_page_config(page_title="Interview Practice Chat", page_icon="🧩", layout="wide")
-    render_chat_ui()
-    # Allow `python streamlit_chat_app.py` for local debugging.
-    main()
