@@ -12,6 +12,7 @@ from typing import Iterable
 MAX_JOB_DESCRIPTION_LENGTH = 6000
 MAX_CV_LENGTH = 4000
 MAX_USER_PROMPT_LENGTH = 2000
+MAX_CHAT_USER_PROMPT_LENGTH = 30000
 
 # Heuristic patterns for common prompt-injection attempts.
 _INJECTION_PATTERNS: Iterable[re.Pattern[str]] = (
@@ -156,16 +157,19 @@ def build_salted_tag_names(salt: str) -> dict[str, str]:
     }
 
 
-def validate_inputs(
-    job_description: str, cv_text: str, user_prompt: str
+def _validate_inputs_with_limits(
+    job_description: str,
+    cv_text: str,
+    user_prompt: str,
+    user_prompt_limit: int,
 ) -> tuple[bool, str | None]:
-    """Validate user inputs and reject unsafe requests."""
+    """Validate inputs against the provided user prompt length limit."""
 
     # Validate each field independently to give precise feedback.
     for label, text, limit in (
         ("Job description", job_description, MAX_JOB_DESCRIPTION_LENGTH),
         ("CV", cv_text, MAX_CV_LENGTH),
-        ("User prompt", user_prompt, MAX_USER_PROMPT_LENGTH),
+        ("User prompt", user_prompt, user_prompt_limit),
     ):
         ok, message = _check_length(label, text, limit)
         if not ok:
@@ -193,3 +197,23 @@ def validate_inputs(
 
     # No issues found; allow the request to proceed.
     return True, None
+
+
+def validate_inputs(
+    job_description: str, cv_text: str, user_prompt: str
+) -> tuple[bool, str | None]:
+    """Validate classic UI inputs and reject unsafe requests."""
+
+    return _validate_inputs_with_limits(
+        job_description, cv_text, user_prompt, MAX_USER_PROMPT_LENGTH
+    )
+
+
+def validate_chat_inputs(
+    job_description: str, cv_text: str, user_prompt: str
+) -> tuple[bool, str | None]:
+    """Validate chat inputs with a larger user prompt limit."""
+
+    return _validate_inputs_with_limits(
+        job_description, cv_text, user_prompt, MAX_CHAT_USER_PROMPT_LENGTH
+    )

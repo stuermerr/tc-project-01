@@ -1,4 +1,5 @@
 from app.core.safety import (
+    MAX_CHAT_USER_PROMPT_LENGTH,
     MAX_CV_LENGTH,
     MAX_JOB_DESCRIPTION_LENGTH,
     MAX_USER_PROMPT_LENGTH,
@@ -6,6 +7,7 @@ from app.core.safety import (
     record_safety_event,
     sanitize_output,
     validate_output,
+    validate_chat_inputs,
     validate_inputs,
 )
 
@@ -63,6 +65,25 @@ def test_job_description_max_length_allows_boundary():
         "",
         "",
         "c" * (MAX_USER_PROMPT_LENGTH + 1),
+    )
+    assert ok is False
+    assert message
+
+
+def test_chat_user_prompt_max_length_allows_boundary():
+    # Chat prompts can be much larger to accommodate history.
+    ok, message = validate_chat_inputs(
+        "",
+        "",
+        "d" * MAX_CHAT_USER_PROMPT_LENGTH,
+    )
+    assert ok is True
+    assert message is None
+
+    ok, message = validate_chat_inputs(
+        "",
+        "",
+        "e" * (MAX_CHAT_USER_PROMPT_LENGTH + 1),
     )
     assert ok is False
     assert message

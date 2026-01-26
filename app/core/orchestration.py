@@ -10,7 +10,12 @@ from app.core.dataclasses import RequestPayload
 from app.core.llm.openai_client import generate_chat_completion, generate_completion
 from app.core.prompt_builder import build_messages
 from app.core.prompts import get_chat_prompt_variants, get_prompt_variants
-from app.core.safety import sanitize_output, validate_inputs, validate_output
+from app.core.safety import (
+    sanitize_output,
+    validate_chat_inputs,
+    validate_inputs,
+    validate_output,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -197,7 +202,8 @@ def generate_chat_response(payload: RequestPayload) -> tuple[bool, str]:
     request_meta = _payload_metadata(payload)
     _LOGGER.info("chat_request_received", extra=request_meta)
 
-    ok, refusal = validate_inputs(
+    # Allow larger prompts in chat because the history is serialized.
+    ok, refusal = validate_chat_inputs(
         payload.job_description, payload.cv_text, payload.user_prompt
     )
     if not ok:
