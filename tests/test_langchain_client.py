@@ -91,3 +91,27 @@ def test_generate_langchain_questions_parses_structured_json(monkeypatch):
     assert ok is True
     assert isinstance(result, dict)
     assert len(result["interview_questions"]) == 5
+
+
+def test_generate_langchain_chat_response_returns_text(monkeypatch):
+    """Verify LangChain chat wrapper returns plain text."""
+    created_clients: list[_DummyChatOpenAI] = []
+    _DummyChatOpenAI.next_response = "chat reply"
+
+    def _factory(**kwargs):
+        return _DummyChatOpenAI(created_clients, **kwargs)
+
+    monkeypatch.setattr(langchain_client, "ChatOpenAI", _factory)
+
+    payload = RequestPayload(
+        job_description="JD",
+        cv_text="CV",
+        user_prompt="User prompt",
+        prompt_variant_id=101,
+        temperature=0.2,
+    )
+
+    ok, result = langchain_client.generate_langchain_chat_response(payload)
+
+    assert ok is True
+    assert result == "chat reply"
