@@ -58,27 +58,27 @@ def render_classic_ui() -> None:
     if _CV_TEXT_KEY not in st.session_state:
         st.session_state[_CV_TEXT_KEY] = ""
 
-    # Wrap inputs in a form so Enter can submit from the single-line prompt field.
-    with st.form("question_generator_form"):
-        # Place JD and CV side-by-side at the top for easy comparison.
-        col_left, col_right = st.columns(2)
-        with col_left:
-            # Capture JD input on the left to match typical reading order.
-            job_description = st.text_area(
-                "Job Description (optional)",
-                height=220,
-                placeholder="Paste the target role description here.",
-                key=_JOB_DESCRIPTION_KEY,
-            )
-        with col_right:
-            # Capture CV input on the right so both documents stay visible.
-            cv_text = st.text_area(
-                "CV / Resume (optional)",
-                height=220,
-                placeholder="Paste your CV or resume here.",
-                key=_CV_TEXT_KEY,
-            )
+    # Place JD and CV side-by-side at the top for easy comparison.
+    col_left, col_right = st.columns(2)
+    with col_left:
+        # Capture JD input on the left to match typical reading order.
+        job_description = st.text_area(
+            "Job Description (optional)",
+            height=220,
+            placeholder="Paste the target role description here.",
+            key=_JOB_DESCRIPTION_KEY,
+        )
+    with col_right:
+        # Capture CV input on the right so both documents stay visible.
+        cv_text = st.text_area(
+            "CV / Resume (optional)",
+            height=220,
+            placeholder="Paste your CV or resume here.",
+            key=_CV_TEXT_KEY,
+        )
 
+    # Wrap settings in a form so Enter can submit from the single-line prompt field.
+    with st.form("question_generator_form"):
         # Collect settings below the JD/CV inputs in a single row.
         settings_left, settings_mid, settings_right = st.columns(3)
         with settings_left:
