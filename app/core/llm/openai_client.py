@@ -79,7 +79,7 @@ def _request_completion(
     if response_format:
         request_payload["response_format"] = response_format
     if reasoning_effort and is_gpt5_model(selected_model):
-        request_payload["reasoning"] = {"effort": reasoning_effort}
+        request_payload["reasoning_effort"] = reasoning_effort
     response = client.chat.completions.create(**request_payload)
     # Extract the first response choice for a single-turn UI.
     message = response.choices[0].message

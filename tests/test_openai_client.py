@@ -128,7 +128,7 @@ def test_generate_completion_gpt5_uses_reasoning_effort(monkeypatch):
     last_kwargs = created_clients[0].chat.completions.last_kwargs
     assert last_kwargs["model"] == "gpt-5-nano"
     assert "temperature" not in last_kwargs
-    assert last_kwargs["reasoning"] == {"effort": "medium"}
+    assert last_kwargs["reasoning_effort"] == "medium"
     assert last_kwargs["response_format"]["type"] == "json_schema"
 
 
