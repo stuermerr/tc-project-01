@@ -2,6 +2,7 @@ from app.core.model_catalog import (
     DEFAULT_MODEL,
     get_allowed_models,
     get_reasoning_effort_options,
+    get_verbosity_options,
 )
 
 
@@ -17,15 +18,19 @@ def test_default_model_is_in_catalog():
 
 
 def test_get_reasoning_effort_options_for_gpt5():
-    # GPT-5 models should expose the full reasoning effort range.
+    # GPT-5 nano exposes reasoning effort controls.
     assert get_reasoning_effort_options("gpt-5-nano") == [
         "minimal",
         "low",
         "medium",
         "high",
     ]
-    assert get_reasoning_effort_options("gpt-5.2-chat-latest") == [
-        "minimal",
+    assert get_reasoning_effort_options("gpt-5.2-chat-latest") == []
+
+
+def test_get_verbosity_options_for_chat_latest():
+    # GPT-5.2 chat-latest exposes verbosity controls.
+    assert get_verbosity_options("gpt-5.2-chat-latest") == [
         "low",
         "medium",
         "high",

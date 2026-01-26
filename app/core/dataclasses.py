@@ -21,6 +21,7 @@ class RequestPayload:
     temperature: float | None
     model_name: str = DEFAULT_MODEL
     reasoning_effort: str | None = None
+    verbosity: str | None = None
 
 
 # Immutable variant container avoids accidental prompt mutation.

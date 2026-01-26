@@ -1,5 +1,9 @@
 from app.core.llm import openai_client
-from app.core.model_catalog import get_allowed_models, get_reasoning_effort_options
+from app.core.model_catalog import (
+    get_allowed_models,
+    get_reasoning_effort_options,
+    get_verbosity_options,
+)
 from app.core.structured_output import STRUCTURED_OUTPUT_SCHEMA
 
 
@@ -150,6 +154,33 @@ def test_generate_completion_gpt5_uses_reasoning_effort(monkeypatch):
     assert last_kwargs["response_format"]["type"] == "json_schema"
 
 
+def test_generate_completion_uses_verbosity(monkeypatch):
+    # Track client creation to inspect the request parameters.
+    created_clients: list[_DummyOpenAI] = []
+
+    def _factory():
+        return _DummyOpenAI(created_clients)
+
+    monkeypatch.setattr(openai_client, "OpenAI", _factory)
+    messages = [
+        {"role": "system", "content": "system"},
+        {"role": "user", "content": "user"},
+    ]
+
+    ok, result = openai_client.generate_completion(
+        messages,
+        temperature=None,
+        model_name="gpt-5.2-chat-latest",
+        verbosity="high",
+    )
+
+    assert ok is True
+    assert result == "mocked-response"
+    last_kwargs = created_clients[0].chat.completions.last_kwargs
+    assert last_kwargs["model"] == "gpt-5.2-chat-latest"
+    assert last_kwargs["verbosity"] == "high"
+
+
 def test_generate_chat_completion_omits_response_format(monkeypatch):
     # Track client creation to inspect the request parameters.
     created_clients: list[_DummyOpenAI] = []
@@ -189,25 +220,32 @@ def test_gpt5_models_accept_reasoning_effort_options(monkeypatch):
         {"role": "user", "content": "user"},
     ]
 
-    for model_name in ["gpt-5-nano", "gpt-5.2-chat-latest"]:
-        for effort in get_reasoning_effort_options(model_name):
-            ok, result = openai_client.generate_chat_completion(
-                messages,
-                temperature=None,
-                model_name=model_name,
-                reasoning_effort=effort,
-            )
+    for effort in get_reasoning_effort_options("gpt-5-nano"):
+        ok, result = openai_client.generate_chat_completion(
+            messages,
+            temperature=None,
+            model_name="gpt-5-nano",
+            reasoning_effort=effort,
+        )
 
-            assert ok is True
-            assert result == "mocked-response"
-            client = created_clients[-1]
-            if model_name == "gpt-5.2-chat-latest":
-                last_kwargs = client.responses.last_kwargs
-                assert last_kwargs["model"] == model_name
-                assert last_kwargs["reasoning"] == {"effort": effort}
-                assert "temperature" not in last_kwargs
-            else:
-                last_kwargs = client.chat.completions.last_kwargs
-                assert last_kwargs["model"] == model_name
-                assert "temperature" not in last_kwargs
-                assert last_kwargs["reasoning_effort"] == effort
+        assert ok is True
+        assert result == "mocked-response"
+        last_kwargs = created_clients[-1].chat.completions.last_kwargs
+        assert last_kwargs["model"] == "gpt-5-nano"
+        assert "temperature" not in last_kwargs
+        assert last_kwargs["reasoning_effort"] == effort
+
+    for verbosity in get_verbosity_options("gpt-5.2-chat-latest"):
+        ok, result = openai_client.generate_chat_completion(
+            messages,
+            temperature=None,
+            model_name="gpt-5.2-chat-latest",
+            verbosity=verbosity,
+        )
+
+        assert ok is True
+        assert result == "mocked-response"
+        last_kwargs = created_clients[-1].responses.last_kwargs
+        assert last_kwargs["model"] == "gpt-5.2-chat-latest"
+        assert last_kwargs["text"] == {"verbosity": verbosity}
+        assert "temperature" not in last_kwargs
