@@ -1,9 +1,10 @@
 # 🧩 Interview Practice App (Streamlit + OpenAI + LangChain)
 
 ## ✅ Overview
-- 🎯 Classic mode generates exactly 5 tagged interview questions (English).
+- 🎯 Generates exactly 5 interview questions from JD + CV.
+- 🧭 Tailors questions with optional user prompt (focus areas).
 - 💬 Chat mode supports coaching, feedback, and follow-ups.
-- 🧾 Classic output uses structured JSON rendered as markdown.
+- 🧾 Question generator output uses structured JSON rendered as markdown.
 - 🛡️ Safety guard blocks obvious prompt injection and enforces length limits.
 - 🎚️ Model settings: temperature for `gpt-4o-mini`, reasoning effort for GPT-5.
 
@@ -11,48 +12,47 @@
 - 🖥️ Streamlit
 - 🤖 OpenAI API + LangChain
 - 🧪 pytest
-- 🧹 ruff
 
-## ▶️ Run locally
-- 🧪 Create and activate a virtual environment.
-- 📦 Install dependencies.
-- 🔐 Create `.env` with `OPENAI_API_KEY=...` (local only).
-- 🚀 Start the multipage app.
+## ⬇️ Clone
+```bash
+git clone <YOUR_REPO_URL>.git
+cd <YOUR_REPO_DIR>
+```
 
+## 🔐 Environment
+- 🧾 Copy the example file and set your key.
+```bash
+cp .env.example .env
+```
+- 🔑 Set `OPENAI_API_KEY=...` inside `.env` for local runs.
+- 🔀 Toggle pages via `.env`: set `APP_IMPL=langchain|openai|both` and/or `ALLOW_IMPL_SWITCH=1`.
+- 🔀 Toggle pages via CLI: `APP_IMPL=both ALLOW_IMPL_SWITCH=1 streamlit run app/ui/App.py`.
+
+## ▶️ Install + run (Option A: Conda)
+```bash
+conda env create -f environment.yml
+conda activate tc
+streamlit run app/ui/App.py
+```
+
+## ▶️ Install + run (Option B: venv)
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-printf "OPENAI_API_KEY=...\n" > .env
 streamlit run app/ui/App.py
 ```
 
-## 🧪 Run tests
-- ✅ Default project command (conda):
+## 🧪 Tests
+- ✅ Conda:
 ```bash
 conda run -n tc pytest -q
 ```
-- ✅ Standard command (venv):
+- ✅ venv:
 ```bash
 pytest -q
 ```
 
-## 🚀 Deploy (Streamlit Cloud)
-- 📌 Entrypoint: `app/ui/App.py`
-- 🔧 Set `OPENAI_API_KEY` in Streamlit Cloud secrets.
-- 🧭 Pages live in `app/ui/pages/`.
-- 🧪 Dependencies are in `requirements.txt`.
-
-## 🔀 Implementation toggle
-- 🧪 `APP_IMPL=langchain` (default), `openai`, or `both`.
-- 🧭 Set `ALLOW_IMPL_SWITCH=1` to show a sidebar toggle.
-
-## 🧭 Repo map
-- 🧩 `REQUIREMENTS.md` — product scope + acceptance criteria
-- 🗺️ `ARCHITECTURE.md` — architecture snapshot
-- 🧱 `PLAN.md` — implementation steps
-- 📌 `PROGRESS_TRACKING.md` — decisions + current state
-- 🧰 `RULES.md` — tooling + testing rules
-- 🤖 `AGENTS.md` — AI workflow contract
-- 🧯 `FAILED-DEV-INSIGHTS.md` — post-mortems
-- 🧭 `REPO_GUIDE.md` — module map and flow
+## 🚀 Deploy (optional)
+- 🧭 Entrypoint: `app/ui/App.py`.
+- 🔐 Streamlit Cloud: set `OPENAI_API_KEY` in app settings (secrets/env). `.env` is local-only.
