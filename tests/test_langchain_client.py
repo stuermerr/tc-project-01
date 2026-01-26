@@ -115,3 +115,34 @@ def test_generate_langchain_chat_response_returns_text(monkeypatch):
 
     assert ok is True
     assert result == "chat reply"
+
+
+def test_generate_langchain_chat_response_does_not_parse_json(monkeypatch):
+    """Verify LangChain chat wrapper does not parse JSON."""
+    created_clients: list[_DummyChatOpenAI] = []
+    _DummyChatOpenAI.next_response = "plain chat response"
+
+    def _factory(**kwargs):
+        return _DummyChatOpenAI(created_clients, **kwargs)
+
+    monkeypatch.setattr(langchain_client, "ChatOpenAI", _factory)
+    monkeypatch.setattr(
+        langchain_client,
+        "parse_structured_output",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("Structured parsing should not run for chat")
+        ),
+    )
+
+    payload = RequestPayload(
+        job_description="JD",
+        cv_text="CV",
+        user_prompt="User prompt",
+        prompt_variant_id=101,
+        temperature=0.2,
+    )
+
+    ok, result = langchain_client.generate_langchain_chat_response(payload)
+
+    assert ok is True
+    assert result == "plain chat response"
