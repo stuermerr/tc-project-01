@@ -1,4 +1,4 @@
-"""Thin wrapper around the OpenAI chat completions API."""
+"""Thin wrapper around the OpenAI API."""
 
 from __future__ import annotations
 
@@ -12,10 +12,9 @@ _DOTENV_LOADED = False
 
 # Optional import so tests can run without the dependency installed.
 try:
-    from openai import BadRequestError, OpenAI
+    from openai import OpenAI
 except ImportError:  # pragma: no cover - exercised when dependency is missing
     OpenAI = None
-    BadRequestError = None
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -85,35 +84,7 @@ def _request_completion(
             reasoning_effort = allowed_efforts[0]
         if reasoning_effort:
             request_payload["reasoning_effort"] = reasoning_effort
-    try:
-        response = client.chat.completions.create(**request_payload)
-    except Exception as exc:  # pragma: no cover - network error handling
-        if (
-            BadRequestError is not None
-            and isinstance(exc, BadRequestError)
-            and selected_model == "gpt-5.2-chat-latest"
-            and "reasoning_effort" in str(exc)
-        ):
-            # Fall back to verbosity when reasoning_effort is rejected for chat-latest.
-            fallback_payload = dict(request_payload)
-            effort = fallback_payload.pop("reasoning_effort", None)
-            verbosity_map = {
-                "minimal": "low",
-                "low": "low",
-                "medium": "medium",
-                "high": "high",
-                "none": "low",
-            }
-            verbosity = verbosity_map.get(effort)
-            if verbosity:
-                fallback_payload["verbosity"] = verbosity
-            _LOGGER.info(
-                "openai_reasoning_effort_fallback",
-                extra={"model": selected_model, "verbosity": verbosity or "default"},
-            )
-            response = client.chat.completions.create(**fallback_payload)
-        else:
-            raise
+    response = client.chat.completions.create(**request_payload)
     # Extract the first response choice for a single-turn UI.
     message = response.choices[0].message
     refusal = getattr(message, "refusal", None)
@@ -122,6 +93,80 @@ def _request_completion(
         _LOGGER.info("openai_refusal")
         return False, refusal
     return True, message.content or ""
+
+
+def _messages_to_responses_input(messages: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Convert chat messages into Responses API input format."""
+
+    return [
+        {"role": message["role"], "content": message["content"]}
+        for message in messages
+        if "role" in message and "content" in message
+    ]
+
+
+def _extract_responses_text(response: Any) -> str:
+    """Extract text content from a Responses API result."""
+
+    output_text = getattr(response, "output_text", None)
+    if isinstance(output_text, str) and output_text:
+        return output_text
+    output = getattr(response, "output", None)
+    if isinstance(output, list):
+        parts: list[str] = []
+        for item in output:
+            content = getattr(item, "content", None)
+            if isinstance(content, list):
+                for part in content:
+                    text = getattr(part, "text", None)
+                    if isinstance(text, str):
+                        parts.append(text)
+        if parts:
+            return "\n".join(parts)
+    return ""
+
+
+def _request_responses_chat(
+    messages: list[dict[str, str]],
+    model_name: str | None,
+    reasoning_effort: str | None,
+) -> tuple[bool, str]:
+    """Send a Responses API request for free-form chat output."""
+
+    _load_dotenv_once()
+    if OpenAI is None:
+        _LOGGER.error("openai_client_missing")
+        raise RuntimeError(
+            "OpenAI client library is not installed. "
+            "Install it with `pip install openai`."
+        )
+
+    selected_model = model_name or DEFAULT_MODEL
+    client = OpenAI()
+    responses_input = _messages_to_responses_input(messages)
+    payload: dict[str, Any] = {"model": selected_model, "input": responses_input}
+
+    if reasoning_effort:
+        allowed_efforts = get_reasoning_effort_options(selected_model)
+        if reasoning_effort not in allowed_efforts and allowed_efforts:
+            reasoning_effort = allowed_efforts[0]
+        if reasoning_effort:
+            payload["reasoning"] = {"effort": reasoning_effort}
+
+    _LOGGER.info(
+        "openai_responses_request",
+        extra={
+            "model": selected_model,
+            "reasoning_effort": reasoning_effort or "default",
+            "message_count": len(messages),
+            "messages_total_length": sum(len(msg["content"]) for msg in messages),
+        },
+    )
+    response = client.responses.create(**payload)
+    text = _extract_responses_text(response)
+    if not text:
+        return False, "The model returned an empty response. Please try again."
+    return True, text
 
 
 def generate_completion(
@@ -149,6 +194,10 @@ def generate_chat_completion(
 ) -> tuple[bool, str]:
     """Generate a free-form chat completion using the configured OpenAI model."""
 
+    if model_name == "gpt-5.2-chat-latest":
+        return _request_responses_chat(
+            messages, model_name=model_name, reasoning_effort=reasoning_effort
+        )
     return _request_completion(
         messages,
         temperature,
