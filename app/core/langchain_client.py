@@ -28,12 +28,9 @@ except ImportError:
 
 try:
     from langchain_core.messages import HumanMessage, SystemMessage
-except ImportError:
-    try:
-        from langchain.schema import HumanMessage, SystemMessage
-    except ImportError:  # pragma: no cover - exercised when dependency is missing
-        HumanMessage = None
-        SystemMessage = None
+except ImportError:  # pragma: no cover - exercised when dependency is missing
+    HumanMessage = None
+    SystemMessage = None
 
 _LOGGER = logging.getLogger(__name__)
 
