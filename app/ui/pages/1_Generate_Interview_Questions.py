@@ -14,7 +14,9 @@ def main() -> None:
     setup_logging()
     # Configure the page for the classic mode view.
     st.set_page_config(
-        page_title="Generate Interview Questions", page_icon="🧩", layout="wide"
+        page_title="Interview Questions Generator (OpenAI API)",
+        page_icon="🧩",
+        layout="wide",
     )
     render_classic_ui()
 

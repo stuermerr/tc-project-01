@@ -14,7 +14,9 @@ def main() -> None:
     setup_logging()
     # Configure the page for the LangChain mode view.
     st.set_page_config(
-        page_title="LangChain Interview Questions", page_icon="🧩", layout="wide"
+        page_title="Interview Questions Generator (LangChain)",
+        page_icon="🧩",
+        layout="wide",
     )
     render_langchain_ui()
 

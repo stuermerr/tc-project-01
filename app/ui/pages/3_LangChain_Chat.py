@@ -14,7 +14,9 @@ def main() -> None:
     setup_logging()
     # Configure the page for the LangChain chat view.
     st.set_page_config(
-        page_title="LangChain Interview Chat", page_icon="🧩", layout="wide"
+        page_title="Interview Preparation Chat (LangChain)",
+        page_icon="🧩",
+        layout="wide",
     )
     render_langchain_chat_ui()
 

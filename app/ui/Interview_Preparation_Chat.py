@@ -15,7 +15,9 @@ def main() -> None:
     setup_logging()
     # Configure the page once at startup to control layout and branding.
     st.set_page_config(
-        page_title="Interview Preparation Chat", page_icon="🧩", layout="wide"
+        page_title="Interview Preparation Chat (OpenAI API)",
+        page_icon="🧩",
+        layout="wide",
     )
 
     # Render the chat experience as the homepage for multipage navigation.
