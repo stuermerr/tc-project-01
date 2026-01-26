@@ -52,7 +52,3 @@ conda run -n tc pytest -q
 ```bash
 pytest -q
 ```
-
-## 🚀 Deploy (optional)
-- 🧭 Entrypoint: `app/ui/App.py`.
-- 🔐 Streamlit Cloud: set `OPENAI_API_KEY` in app settings (secrets/env). `.env` is local-only.
