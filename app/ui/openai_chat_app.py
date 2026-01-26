@@ -5,7 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from app.core.logging_config import setup_logging
-from app.ui.chat_ui import render_chat_ui
+from app.ui.openai_chat_ui import render_chat_ui
 
 
 def main() -> None:

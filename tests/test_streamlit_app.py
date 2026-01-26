@@ -10,12 +10,7 @@ def test_streamlit_app_import_smoke():
     """Verify streamlit app import smoke."""
     # Skip when Streamlit isn't installed so CI stays green.
     pytest.importorskip("streamlit")
-    page_path = (
-        Path(__file__).resolve().parents[1]
-        / "app"
-        / "ui"
-        / "Interview_Preparation_Chat_(OpenAI_API).py"
-    )
+    page_path = Path(__file__).resolve().parents[1] / "app" / "ui" / "openai_chat_app.py"
     spec = importlib.util.spec_from_file_location("main_page", page_path)
     assert spec is not None
     module = importlib.util.module_from_spec(spec)

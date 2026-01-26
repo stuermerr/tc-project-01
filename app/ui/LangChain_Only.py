@@ -70,12 +70,12 @@ def main() -> None:
         pages.extend(
             [
                 st.Page(
-                    "app/ui/Interview_Preparation_Chat_(OpenAI_API).py",
+                    "app/ui/openai_chat_app.py",
                     title="Interview Preparation Chat (OpenAI API)",
                     default=(impl_mode == "openai"),
                 ),
                 st.Page(
-                    "app/ui/pages/1_Interview_Questions_Generator_(OpenAI_API).py",
+                    "app/ui/pages/1_OpenAI_Questions_Generator.py",
                     title="Interview Questions Generator (OpenAI API)",
                 ),
             ]
@@ -85,12 +85,12 @@ def main() -> None:
         pages.extend(
             [
                 st.Page(
-                    "app/ui/pages/2_Interview_Preparation_Chat_(LangChain).py",
+                    "app/ui/pages/2_LangChain_Chat.py",
                     title="Interview Preparation Chat (LangChain)",
                     default=(impl_mode in {"langchain", "both"}),
                 ),
                 st.Page(
-                    "app/ui/pages/3_Interview_Questions_Generator_(LangChain).py",
+                    "app/ui/pages/3_LangChain_Questions_Generator.py",
                     title="Interview Questions Generator (LangChain)",
                 ),
             ]
