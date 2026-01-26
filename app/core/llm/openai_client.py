@@ -35,12 +35,13 @@ def _load_dotenv_once() -> None:
     _LOGGER.info("dotenv_loaded")
 
 
-def generate_completion(
+def _request_completion(
     messages: list[dict[str, str]],
     temperature: float,
     model_name: str | None = None,
+    response_format: dict[str, object] | None = None,
 ) -> tuple[bool, str]:
-    """Generate a completion using the configured OpenAI model."""
+    """Send a chat completion request with optional response formatting."""
 
     _load_dotenv_once()
 
@@ -63,16 +64,18 @@ def generate_completion(
             "temperature": temperature,
             "message_count": len(messages),
             "messages_total_length": sum(len(msg["content"]) for msg in messages),
+            "response_format": "json_schema" if response_format else "text",
         },
     )
     client = OpenAI()
-    response: Any = client.chat.completions.create(
-        model=selected_model,
-        messages=messages,
-        temperature=temperature,
-        # Ask the model to return JSON that matches our schema instead of free-form text.
-        response_format={"type": "json_schema", "json_schema": STRUCTURED_OUTPUT_SCHEMA},
-    )
+    request_payload: dict[str, Any] = {
+        "model": selected_model,
+        "messages": messages,
+        "temperature": temperature,
+    }
+    if response_format:
+        request_payload["response_format"] = response_format
+    response = client.chat.completions.create(**request_payload)
     # Extract the first response choice for a single-turn UI.
     message = response.choices[0].message
     refusal = getattr(message, "refusal", None)
@@ -81,3 +84,28 @@ def generate_completion(
         _LOGGER.info("openai_refusal")
         return False, refusal
     return True, message.content or ""
+
+
+def generate_completion(
+    messages: list[dict[str, str]],
+    temperature: float,
+    model_name: str | None = None,
+) -> tuple[bool, str]:
+    """Generate a structured completion using the configured OpenAI model."""
+
+    return _request_completion(
+        messages,
+        temperature,
+        model_name=model_name,
+        response_format={"type": "json_schema", "json_schema": STRUCTURED_OUTPUT_SCHEMA},
+    )
+
+
+def generate_chat_completion(
+    messages: list[dict[str, str]],
+    temperature: float,
+    model_name: str | None = None,
+) -> tuple[bool, str]:
+    """Generate a free-form chat completion using the configured OpenAI model."""
+
+    return _request_completion(messages, temperature, model_name=model_name)

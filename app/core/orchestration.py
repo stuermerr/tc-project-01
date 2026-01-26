@@ -7,9 +7,9 @@ import logging
 import time
 
 from app.core.dataclasses import RequestPayload
-from app.core.llm.openai_client import generate_completion
+from app.core.llm.openai_client import generate_chat_completion, generate_completion
 from app.core.prompt_builder import build_messages
-from app.core.prompts import get_prompt_variants
+from app.core.prompts import get_chat_prompt_variants, get_prompt_variants
 from app.core.safety import sanitize_output, validate_inputs, validate_output
 
 _LOGGER = logging.getLogger(__name__)
@@ -38,6 +38,20 @@ def _select_variant(payload: RequestPayload):
     return variants[0]
 
 
+def _select_chat_variant(payload: RequestPayload):
+    # Match the requested chat variant id, falling back to the first for safety.
+    variants = get_chat_prompt_variants()
+    for variant in variants:
+        if variant.id == payload.prompt_variant_id:
+            return variant
+    # Fall back to the first variant if the requested id is missing.
+    _LOGGER.warning(
+        "chat_variant_fallback",
+        extra={"requested_variant_id": payload.prompt_variant_id},
+    )
+    return variants[0]
+
+
 def _payload_metadata(payload: RequestPayload) -> dict[str, int | float | str]:
     """Summarize payload sizes without logging raw user text."""
 
@@ -50,6 +64,24 @@ def _payload_metadata(payload: RequestPayload) -> dict[str, int | float | str]:
         "temperature": payload.temperature,
         "model_name": payload.model_name,
     }
+
+
+def _sanitize_freeform_output(raw_text: str) -> tuple[bool, str]:
+    """Sanitize free-form output before display."""
+
+    ok, _ = validate_output(raw_text)
+    if ok:
+        return True, raw_text
+    sanitized = sanitize_output(raw_text)
+    ok, _ = validate_output(sanitized)
+    if not ok:
+        _LOGGER.warning("chat_output_blocked")
+        return False, (
+            "The model output contained unsafe content and could not be displayed. "
+            "Please try again."
+        )
+    _LOGGER.info("chat_output_sanitized", extra={"raw_text_length": len(sanitized)})
+    return True, sanitized
 
 
 
@@ -157,3 +189,55 @@ def generate_questions(payload: RequestPayload) -> tuple[bool, dict[str, object]
     if not ok:
         return False, parsed
     return True, parsed
+
+
+def generate_chat_response(payload: RequestPayload) -> tuple[bool, str]:
+    """Generate a free-form chat response or return a refusal message."""
+
+    request_meta = _payload_metadata(payload)
+    _LOGGER.info("chat_request_received", extra=request_meta)
+
+    ok, refusal = validate_inputs(
+        payload.job_description, payload.cv_text, payload.user_prompt
+    )
+    if not ok:
+        _LOGGER.info(
+            "chat_request_blocked",
+            extra={**request_meta, "reason": "input_validation_failed"},
+        )
+        return False, refusal or "Input validation failed."
+
+    variant = _select_chat_variant(payload)
+    _LOGGER.info(
+        "chat_variant_selected",
+        extra={"variant_id": variant.id, "variant_name": variant.name},
+    )
+    messages = build_messages(payload, variant)
+    _LOGGER.info(
+        "chat_messages_built",
+        extra={
+            "message_count": len(messages),
+            "system_message_length": len(messages[0]["content"]),
+            "user_message_length": len(messages[1]["content"]),
+        },
+    )
+    llm_start = time.monotonic()
+    ok, raw_text = generate_chat_completion(
+        messages, payload.temperature, model_name=payload.model_name
+    )
+    llm_duration_ms = int((time.monotonic() - llm_start) * 1000)
+    _LOGGER.info(
+        "chat_llm_response_received",
+        extra={
+            "duration_ms": llm_duration_ms,
+            "raw_text_length": len(raw_text),
+        },
+    )
+    if not ok:
+        _LOGGER.info("chat_llm_refusal")
+        return False, raw_text
+
+    ok, sanitized = _sanitize_freeform_output(raw_text)
+    if not ok:
+        return False, sanitized
+    return True, sanitized
