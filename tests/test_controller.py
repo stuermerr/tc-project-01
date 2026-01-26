@@ -37,9 +37,7 @@ def test_generate_questions_success_path(monkeypatch):
         return True, None
 
     # Fake the LLM response to keep the test deterministic.
-    def _fake_completion(
-        messages, temperature, model_name=None, reasoning_effort=None, verbosity=None
-    ):
+    def _fake_completion(messages, temperature, model_name=None, reasoning_effort=None):
         assert messages
         assert temperature == 0.4
         return True, (
@@ -84,9 +82,7 @@ def test_generate_chat_response_returns_text(monkeypatch):
         return True, None
 
     # Fake the chat completion to keep the test deterministic.
-    def _fake_chat_completion(
-        messages, temperature, model_name=None, reasoning_effort=None, verbosity=None
-    ):
+    def _fake_chat_completion(messages, temperature, model_name=None, reasoning_effort=None):
         assert messages
         assert temperature == 0.3
         return True, "Coach reply"

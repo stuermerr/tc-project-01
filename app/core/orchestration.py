@@ -68,7 +68,6 @@ def _payload_metadata(payload: RequestPayload) -> dict[str, int | float | str]:
         "prompt_variant_id": payload.prompt_variant_id,
         "temperature": payload.temperature if payload.temperature is not None else "default",
         "reasoning_effort": payload.reasoning_effort or "default",
-        "verbosity": payload.verbosity or "default",
         "model_name": payload.model_name,
     }
 
@@ -176,7 +175,6 @@ def generate_questions(payload: RequestPayload) -> tuple[bool, dict[str, object]
         payload.temperature,
         model_name=payload.model_name,
         reasoning_effort=payload.reasoning_effort,
-        verbosity=payload.verbosity,
     )
     llm_duration_ms = int((time.monotonic() - llm_start) * 1000)
     _LOGGER.info(
@@ -239,7 +237,6 @@ def generate_chat_response(payload: RequestPayload) -> tuple[bool, str]:
         payload.temperature,
         model_name=payload.model_name,
         reasoning_effort=payload.reasoning_effort,
-        verbosity=payload.verbosity,
     )
     llm_duration_ms = int((time.monotonic() - llm_start) * 1000)
     _LOGGER.info(

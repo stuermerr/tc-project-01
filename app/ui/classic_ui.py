@@ -11,10 +11,8 @@ from app.core.dataclasses import RequestPayload
 from app.core.model_catalog import (
     DEFAULT_MODEL,
     DEFAULT_REASONING_EFFORT,
-    DEFAULT_VERBOSITY,
     get_allowed_models,
     get_reasoning_effort_options,
-    get_verbosity_options,
     is_gpt5_model,
 )
 from app.core.orchestration import generate_questions
@@ -33,7 +31,6 @@ def _build_payload(
     temperature: float | None,
     model_name: str,
     reasoning_effort: str | None,
-    verbosity: str | None,
 ) -> RequestPayload:
     # Bundle raw UI inputs into a typed payload for the controller.
     return RequestPayload(
@@ -44,7 +41,6 @@ def _build_payload(
         temperature=temperature,
         model_name=model_name,
         reasoning_effort=reasoning_effort,
-        verbosity=verbosity,
     )
 
 
@@ -97,13 +93,8 @@ def render_classic_ui() -> None:
             )
         with settings_mid:
             if model_name == "gpt-5.2-chat-latest":
-                # GPT-5.2 chat-latest uses verbosity instead of reasoning effort.
-                verbosity_options = get_verbosity_options(model_name)
-                verbosity = st.selectbox(
-                    "Verbosity",
-                    options=verbosity_options or [DEFAULT_VERBOSITY],
-                    index=(verbosity_options or [DEFAULT_VERBOSITY]).index(DEFAULT_VERBOSITY),
-                )
+                # GPT-5.2 chat-latest uses default settings (no user tuning).
+                st.empty()
                 reasoning_effort = None
                 temperature = None
             elif is_gpt5_model(model_name):
@@ -116,7 +107,6 @@ def render_classic_ui() -> None:
                         DEFAULT_REASONING_EFFORT
                     ),
                 )
-                verbosity = None
                 temperature = None
             else:
                 # Keep temperature tuning for non-GPT-5 models.
@@ -128,7 +118,6 @@ def render_classic_ui() -> None:
                     step=0.05,
                 )
                 reasoning_effort = None
-                verbosity = None
         with settings_right:
             # Keep layout balanced with a spacer column.
             st.empty()
@@ -157,7 +146,6 @@ def render_classic_ui() -> None:
                 "selected_variant": selected_label,
                 "temperature": temperature if temperature is not None else "default",
                 "reasoning_effort": reasoning_effort or "default",
-                "verbosity": verbosity or "default",
                 "model_name": model_name,
             },
         )
@@ -179,7 +167,6 @@ def render_classic_ui() -> None:
             temperature=temperature,
             model_name=model_name,
             reasoning_effort=reasoning_effort,
-            verbosity=verbosity,
         )
 
         # Show a spinner while the model call runs.
@@ -201,15 +188,10 @@ def render_classic_ui() -> None:
             st.markdown(response)
 
         # Echo metadata so users can reproduce results.
-        if verbosity:
+        if temperature is None:
             st.caption(
                 f"Model: {model_name} | Prompt variant: {selected_label} | "
-                f"Verbosity: {verbosity}"
-            )
-        elif temperature is None:
-            st.caption(
-                f"Model: {model_name} | Prompt variant: {selected_label} | "
-                f"Reasoning effort: {reasoning_effort}"
+                f"Reasoning effort: {reasoning_effort or 'default'}"
             )
         else:
             st.caption(

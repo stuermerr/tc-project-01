@@ -17,10 +17,8 @@ from app.core.dataclasses import RequestPayload
 from app.core.model_catalog import (
     DEFAULT_MODEL,
     DEFAULT_REASONING_EFFORT,
-    DEFAULT_VERBOSITY,
     get_allowed_models,
     get_reasoning_effort_options,
-    get_verbosity_options,
     is_gpt5_model,
 )
 from app.core.orchestration import generate_chat_response
@@ -41,7 +39,6 @@ def _build_payload(
     temperature: float | None,
     model_name: str,
     reasoning_effort: str | None,
-    verbosity: str | None,
 ) -> RequestPayload:
     # Bundle raw UI inputs into a typed payload for the controller.
     return RequestPayload(
@@ -52,7 +49,6 @@ def _build_payload(
         temperature=temperature,
         model_name=model_name,
         reasoning_effort=reasoning_effort,
-        verbosity=verbosity,
     )
 
 
@@ -112,12 +108,7 @@ def render_chat_ui() -> None:
         )
     with settings_right:
         if model_name == "gpt-5.2-chat-latest":
-            verbosity_options = get_verbosity_options(model_name)
-            verbosity = st.selectbox(
-                "Verbosity",
-                options=verbosity_options or [DEFAULT_VERBOSITY],
-                index=(verbosity_options or [DEFAULT_VERBOSITY]).index(DEFAULT_VERBOSITY),
-            )
+            st.empty()
             reasoning_effort = None
             temperature = None
         elif is_gpt5_model(model_name):
@@ -129,7 +120,6 @@ def render_chat_ui() -> None:
                     DEFAULT_REASONING_EFFORT
                 ),
             )
-            verbosity = None
             temperature = None
         else:
             temperature = st.slider(
@@ -140,7 +130,6 @@ def render_chat_ui() -> None:
                 step=0.05,
             )
             reasoning_effort = None
-            verbosity = None
 
     st.divider()
 
@@ -168,7 +157,6 @@ def render_chat_ui() -> None:
             "selected_variant": selected_label,
             "temperature": temperature if temperature is not None else "default",
             "reasoning_effort": reasoning_effort or "default",
-            "verbosity": verbosity or "default",
             "model_name": model_name,
         },
     )
@@ -199,7 +187,6 @@ def render_chat_ui() -> None:
         temperature=temperature,
         model_name=model_name,
         reasoning_effort=reasoning_effort,
-        verbosity=verbosity,
     )
 
     # Generate the assistant response and render it in the chat.

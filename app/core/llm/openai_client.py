@@ -5,12 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.core.model_catalog import (
-    DEFAULT_MODEL,
-    get_reasoning_effort_options,
-    get_verbosity_options,
-    is_gpt5_model,
-)
+from app.core.model_catalog import DEFAULT_MODEL, get_reasoning_effort_options, is_gpt5_model
 from app.core.structured_output import STRUCTURED_OUTPUT_SCHEMA
 
 _DOTENV_LOADED = False
@@ -46,7 +41,6 @@ def _request_completion(
     model_name: str | None = None,
     response_format: dict[str, object] | None = None,
     reasoning_effort: str | None = None,
-    verbosity: str | None = None,
 ) -> tuple[bool, str]:
     """Send a chat completion request with optional response formatting."""
 
@@ -70,7 +64,6 @@ def _request_completion(
             "model": selected_model,
             "temperature": temperature if temperature is not None else "default",
             "reasoning_effort": reasoning_effort or "default",
-            "verbosity": verbosity or "default",
             "message_count": len(messages),
             "messages_total_length": sum(len(msg["content"]) for msg in messages),
             "response_format": "json_schema" if response_format else "text",
@@ -85,7 +78,7 @@ def _request_completion(
         request_payload["temperature"] = temperature
     if response_format:
         request_payload["response_format"] = response_format
-    if reasoning_effort and is_gpt5_model(selected_model):
+    if reasoning_effort and is_gpt5_model(selected_model) and selected_model != "gpt-5.2-chat-latest":
         allowed_efforts = get_reasoning_effort_options(selected_model)
         if reasoning_effort not in allowed_efforts and allowed_efforts:
             reasoning_effort = allowed_efforts[0]
@@ -102,86 +95,11 @@ def _request_completion(
     return True, message.content or ""
 
 
-def _messages_to_responses_input(messages: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Convert chat messages into Responses API input format."""
-
-    return [
-        {"role": message["role"], "content": message["content"]}
-        for message in messages
-        if "role" in message and "content" in message
-    ]
-
-
-def _extract_responses_text(response: Any) -> str:
-    """Extract text content from a Responses API result."""
-
-    output_text = getattr(response, "output_text", None)
-    if isinstance(output_text, str) and output_text:
-        return output_text
-    output = getattr(response, "output", None)
-    if isinstance(output, list):
-        parts: list[str] = []
-        for item in output:
-            content = getattr(item, "content", None)
-            if isinstance(content, list):
-                for part in content:
-                    text = getattr(part, "text", None)
-                    if isinstance(text, str):
-                        parts.append(text)
-        if parts:
-            return "\n".join(parts)
-    return ""
-
-
-def _request_responses_chat(
-    messages: list[dict[str, str]],
-    model_name: str | None,
-    verbosity: str | None,
-) -> tuple[bool, str]:
-    """Send a Responses API request for free-form chat output."""
-
-    _load_dotenv_once()
-    if OpenAI is None:
-        _LOGGER.error("openai_client_missing")
-        raise RuntimeError(
-            "OpenAI client library is not installed. "
-            "Install it with `pip install openai`."
-        )
-
-    selected_model = model_name or DEFAULT_MODEL
-    client = OpenAI()
-    responses_input = _messages_to_responses_input(messages)
-    payload: dict[str, Any] = {"model": selected_model, "input": responses_input}
-
-    if verbosity:
-        allowed_verbosity = get_verbosity_options(selected_model)
-        if verbosity not in allowed_verbosity and allowed_verbosity:
-            verbosity = allowed_verbosity[0]
-        if verbosity:
-            payload["text"] = {"verbosity": verbosity}
-
-    _LOGGER.info(
-        "openai_responses_request",
-        extra={
-            "model": selected_model,
-            "verbosity": verbosity or "default",
-            "message_count": len(messages),
-            "messages_total_length": sum(len(msg["content"]) for msg in messages),
-        },
-    )
-    response = client.responses.create(**payload)
-    text = _extract_responses_text(response)
-    if not text:
-        return False, "The model returned an empty response. Please try again."
-    return True, text
-
-
 def generate_completion(
     messages: list[dict[str, str]],
     temperature: float | None,
     model_name: str | None = None,
     reasoning_effort: str | None = None,
-    verbosity: str | None = None,
 ) -> tuple[bool, str]:
     """Generate a structured completion using the configured OpenAI model."""
 
@@ -191,7 +109,6 @@ def generate_completion(
         model_name=model_name,
         response_format={"type": "json_schema", "json_schema": STRUCTURED_OUTPUT_SCHEMA},
         reasoning_effort=reasoning_effort,
-        verbosity=verbosity,
     )
 
 
@@ -200,12 +117,9 @@ def generate_chat_completion(
     temperature: float | None,
     model_name: str | None = None,
     reasoning_effort: str | None = None,
-    verbosity: str | None = None,
 ) -> tuple[bool, str]:
     """Generate a free-form chat completion using the configured OpenAI model."""
 
-    if model_name == "gpt-5.2-chat-latest":
-        return _request_responses_chat(messages, model_name=model_name, verbosity=verbosity)
     return _request_completion(
         messages,
         temperature,

@@ -1,9 +1,4 @@
-from app.core.model_catalog import (
-    DEFAULT_MODEL,
-    get_allowed_models,
-    get_reasoning_effort_options,
-    get_verbosity_options,
-)
+from app.core.model_catalog import DEFAULT_MODEL, get_allowed_models, get_reasoning_effort_options
 
 
 def test_get_allowed_models_returns_expected_list():
@@ -26,12 +21,3 @@ def test_get_reasoning_effort_options_for_gpt5():
         "high",
     ]
     assert get_reasoning_effort_options("gpt-5.2-chat-latest") == []
-
-
-def test_get_verbosity_options_for_chat_latest():
-    # GPT-5.2 chat-latest exposes verbosity controls.
-    assert get_verbosity_options("gpt-5.2-chat-latest") == [
-        "low",
-        "medium",
-        "high",
-    ]

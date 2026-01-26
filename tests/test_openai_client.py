@@ -1,9 +1,5 @@
 from app.core.llm import openai_client
-from app.core.model_catalog import (
-    get_allowed_models,
-    get_reasoning_effort_options,
-    get_verbosity_options,
-)
+from app.core.model_catalog import get_allowed_models, get_reasoning_effort_options
 from app.core.structured_output import STRUCTURED_OUTPUT_SCHEMA
 
 
@@ -25,12 +21,6 @@ class _DummyResponse:
         self.choices = [_DummyChoice(content)]
 
 
-class _DummyResponsesResult:
-    # Provide output_text for Responses API calls.
-    def __init__(self, content: str) -> None:
-        self.output_text = content
-
-
 class _DummyCompletions:
     # Record the last payload so the test can assert it.
     def __init__(self) -> None:
@@ -48,22 +38,10 @@ class _DummyChat:
         self.completions = _DummyCompletions()
 
 
-class _DummyResponses:
-    # Record the last payload so the test can assert it.
-    def __init__(self) -> None:
-        self.last_kwargs: dict[str, object] | None = None
-
-    # Return a deterministic response for testing.
-    def create(self, **kwargs):
-        self.last_kwargs = kwargs
-        return _DummyResponsesResult("mocked-response")
-
-
 class _DummyOpenAI:
     # Capture created clients so we can inspect the payload used.
     def __init__(self, created_clients: list["_DummyOpenAI"]) -> None:
         self.chat = _DummyChat()
-        self.responses = _DummyResponses()
         created_clients.append(self)
 
 
@@ -154,7 +132,7 @@ def test_generate_completion_gpt5_uses_reasoning_effort(monkeypatch):
     assert last_kwargs["response_format"]["type"] == "json_schema"
 
 
-def test_generate_completion_uses_verbosity(monkeypatch):
+def test_generate_completion_chat_latest_uses_defaults(monkeypatch):
     # Track client creation to inspect the request parameters.
     created_clients: list[_DummyOpenAI] = []
 
@@ -171,7 +149,6 @@ def test_generate_completion_uses_verbosity(monkeypatch):
         messages,
         temperature=None,
         model_name="gpt-5.2-chat-latest",
-        verbosity="high",
     )
 
     assert ok is True
@@ -179,6 +156,7 @@ def test_generate_completion_uses_verbosity(monkeypatch):
     last_kwargs = created_clients[0].chat.completions.last_kwargs
     assert last_kwargs["model"] == "gpt-5.2-chat-latest"
     assert "verbosity" not in last_kwargs
+    assert "reasoning_effort" not in last_kwargs
 
 
 def test_generate_chat_completion_omits_response_format(monkeypatch):
@@ -235,23 +213,8 @@ def test_gpt5_models_accept_reasoning_effort_options(monkeypatch):
         assert "temperature" not in last_kwargs
         assert last_kwargs["reasoning_effort"] == effort
 
-    for verbosity in get_verbosity_options("gpt-5.2-chat-latest"):
-        ok, result = openai_client.generate_chat_completion(
-            messages,
-            temperature=None,
-            model_name="gpt-5.2-chat-latest",
-            verbosity=verbosity,
-        )
 
-        assert ok is True
-        assert result == "mocked-response"
-        last_kwargs = created_clients[-1].responses.last_kwargs
-        assert last_kwargs["model"] == "gpt-5.2-chat-latest"
-        assert last_kwargs["text"] == {"verbosity": verbosity}
-        assert "temperature" not in last_kwargs
-
-
-def test_chat_latest_ignores_reasoning_effort_for_responses(monkeypatch):
+def test_chat_latest_ignores_reasoning_effort(monkeypatch):
     # Track client creation to inspect the request parameters.
     created_clients: list[_DummyOpenAI] = []
 
@@ -273,34 +236,6 @@ def test_chat_latest_ignores_reasoning_effort_for_responses(monkeypatch):
 
     assert ok is True
     assert result == "mocked-response"
-    last_kwargs = created_clients[-1].responses.last_kwargs
-    assert last_kwargs["model"] == "gpt-5.2-chat-latest"
-    assert "reasoning" not in last_kwargs
-    assert "text" not in last_kwargs
-
-
-def test_gpt5_nano_ignores_verbosity(monkeypatch):
-    # Track client creation so we can inspect the request parameters.
-    created_clients: list[_DummyOpenAI] = []
-
-    def _factory():
-        return _DummyOpenAI(created_clients)
-
-    monkeypatch.setattr(openai_client, "OpenAI", _factory)
-    messages = [
-        {"role": "system", "content": "system"},
-        {"role": "user", "content": "user"},
-    ]
-
-    ok, result = openai_client.generate_chat_completion(
-        messages,
-        temperature=None,
-        model_name="gpt-5-nano",
-        verbosity="high",
-    )
-
-    assert ok is True
-    assert result == "mocked-response"
     last_kwargs = created_clients[-1].chat.completions.last_kwargs
-    assert last_kwargs["model"] == "gpt-5-nano"
-    assert "verbosity" not in last_kwargs
+    assert last_kwargs["model"] == "gpt-5.2-chat-latest"
+    assert "reasoning_effort" not in last_kwargs

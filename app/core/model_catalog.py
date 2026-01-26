@@ -16,10 +16,6 @@ _REASONING_EFFORT_BY_MODEL = {
     "gpt-5-nano": ["minimal", "low", "medium", "high"],
 }
 DEFAULT_REASONING_EFFORT = "medium"
-_VERBOSITY_BY_MODEL = {
-    "gpt-5.2-chat-latest": ["low", "medium", "high"],
-}
-DEFAULT_VERBOSITY = "medium"
 
 
 def get_allowed_models() -> list[str]:
@@ -40,12 +36,4 @@ def get_reasoning_effort_options(model_name: str) -> list[str]:
 
     if model_name in _REASONING_EFFORT_BY_MODEL:
         return list(_REASONING_EFFORT_BY_MODEL[model_name])
-    return []
-
-
-def get_verbosity_options(model_name: str) -> list[str]:
-    """Return the allowed verbosity values for the given model."""
-
-    if model_name in _VERBOSITY_BY_MODEL:
-        return list(_VERBOSITY_BY_MODEL[model_name])
     return []
