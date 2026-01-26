@@ -15,6 +15,8 @@ from app.core.safety import check_rate_limit
 from app.core.structured_output import render_markdown_from_response
 
 _LOGGER = logging.getLogger(__name__)
+_JOB_DESCRIPTION_KEY = "shared_job_description"
+_CV_TEXT_KEY = "shared_cv_text"
 
 
 def _build_payload(
@@ -50,6 +52,12 @@ def render_classic_ui() -> None:
     # Load the supported model list so the UI stays in sync with the backend.
     allowed_models = get_allowed_models()
 
+    # Initialize shared session state so JD/CV persist across pages in this session.
+    if _JOB_DESCRIPTION_KEY not in st.session_state:
+        st.session_state[_JOB_DESCRIPTION_KEY] = ""
+    if _CV_TEXT_KEY not in st.session_state:
+        st.session_state[_CV_TEXT_KEY] = ""
+
     # Wrap inputs in a form so Enter can submit from the single-line prompt field.
     with st.form("question_generator_form"):
         # Place JD and CV side-by-side at the top for easy comparison.
@@ -60,6 +68,7 @@ def render_classic_ui() -> None:
                 "Job Description (optional)",
                 height=220,
                 placeholder="Paste the target role description here.",
+                key=_JOB_DESCRIPTION_KEY,
             )
         with col_right:
             # Capture CV input on the right so both documents stay visible.
@@ -67,6 +76,7 @@ def render_classic_ui() -> None:
                 "CV / Resume (optional)",
                 height=220,
                 placeholder="Paste your CV or resume here.",
+                key=_CV_TEXT_KEY,
             )
 
         # Collect settings below the JD/CV inputs in a single row.
