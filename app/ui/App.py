@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import streamlit as st
 
@@ -20,6 +21,8 @@ _IMPLEMENTATION_LABELS = {
     "openai": "OpenAI API only",
     "both": "LangChain + OpenAI API",
 }
+
+_BASE_DIR = Path(__file__).resolve().parent
 
 
 def _normalize_mode(value: str | None) -> str:
@@ -78,12 +81,12 @@ def main() -> None:
         pages.extend(
             [
                 st.Page(
-                    "app/ui/openai_chat_app.py",
+                    str(_BASE_DIR / "openai_chat_app.py"),
                     title="Interview Preparation Chat (OpenAI API)",
                     default=(impl_mode == "openai"),
                 ),
                 st.Page(
-                    "app/ui/pages/1_OpenAI_Questions_Generator.py",
+                    str(_BASE_DIR / "pages" / "1_OpenAI_Questions_Generator.py"),
                     title="Interview Questions Generator (OpenAI API)",
                 ),
             ]
@@ -93,12 +96,12 @@ def main() -> None:
         pages.extend(
             [
                 st.Page(
-                    "app/ui/pages/2_LangChain_Chat.py",
+                    str(_BASE_DIR / "pages" / "2_LangChain_Chat.py"),
                     title="Interview Preparation Chat (LangChain)",
                     default=(impl_mode in {"langchain", "both"}),
                 ),
                 st.Page(
-                    "app/ui/pages/3_LangChain_Questions_Generator.py",
+                    str(_BASE_DIR / "pages" / "3_LangChain_Questions_Generator.py"),
                     title="Interview Questions Generator (LangChain)",
                 ),
             ]

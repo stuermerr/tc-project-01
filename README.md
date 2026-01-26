@@ -1,79 +1,58 @@
-# 🧩 Sprint 1 — Interview Practice App (Streamlit + OpenAI)
+# 🧩 Interview Practice App (Streamlit + OpenAI + LangChain)
 
-A single-page Streamlit app that generates **5 tailored interview questions (English)** using an OpenAI model, based on an optional **job description**, optional **CV text**, and an optional **user prompt**.
-
-## ✅ What it does (MVP)
-- ✅ Generates **exactly 5** interview questions, each with **tags** (e.g. `[Technical]`, `[Behavioral]`, `[Role-specific]`, `[Screening]`, `[Onsite]`, `[Final]`)
-- ✅ Uses **5 different system prompt variants** (dropdown) to represent different interviewer modes / rounds
-- ✅ If **Job Description is empty**, asks once for the **target role**, then proceeds
-- ✅ If **CV is empty**, mentions once that adding it helps tailor questions better
-- ✅ Includes a **temperature slider** (tuning requirement)
-- ✅ Includes a **security guard** (input validation + basic prompt-injection detection)
-
-Full behavior and output contract: see `REQUIREMENTS.md`.
+## ✅ Overview
+- 🎯 Classic mode generates exactly 5 tagged interview questions (English).
+- 💬 Chat mode supports coaching, feedback, and follow-ups.
+- 🧾 Classic output uses structured JSON rendered as markdown.
+- 🛡️ Safety guard blocks obvious prompt injection and enforces length limits.
+- 🎚️ Model settings: temperature for `gpt-4o-mini`, reasoning effort for GPT-5.
 
 ## 🧰 Tech stack
-- Frontend: **Streamlit**
-- LLM API: **OpenAI**
-- Tests: **pytest**
-- Lint/format (later): **ruff**
+- 🖥️ Streamlit
+- 🤖 OpenAI API + LangChain
+- 🧪 pytest
+- 🧹 ruff
 
-## 🏃 Run locally
-1) Create a virtual environment and install deps
-2) Add your OpenAI key
-3) Start the app
+## ▶️ Run locally
+- 🧪 Create and activate a virtual environment.
+- 📦 Install dependencies.
+- 🔐 Create `.env` with `OPENAI_API_KEY=...` (local only).
+- 🚀 Start the multipage app.
 
 ```bash
-# example (adjust to your setup)
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-
-cp .env.example .env
-# edit .env and set OPENAI_API_KEY=...
-
+printf "OPENAI_API_KEY=...\n" > .env
 streamlit run app/ui/App.py
 ```
 
 ## 🧪 Run tests
+- ✅ Default project command (conda):
+```bash
+conda run -n tc pytest -q
+```
+- ✅ Standard command (venv):
 ```bash
 pytest -q
 ```
 
-## 🚀 Deploy on Streamlit Cloud
-This app is designed to deploy from a single entrypoint. Use the multipage root:
+## 🚀 Deploy (Streamlit Cloud)
+- 📌 Entrypoint: `app/ui/App.py`
+- 🔧 Set `OPENAI_API_KEY` in Streamlit Cloud secrets.
+- 🧭 Pages live in `app/ui/pages/`.
+- 🧪 Dependencies are in `requirements.txt`.
 
-- **Entrypoint**: `app/ui/App.py`
-  - This launches the chat landing page and exposes the classic + LangChain pages via `app/ui/pages/`.
+## 🔀 Implementation toggle
+- 🧪 `APP_IMPL=langchain` (default), `openai`, or `both`.
+- 🧭 Set `ALLOW_IMPL_SWITCH=1` to show a sidebar toggle.
 
-### Steps
-1) Push this repo to GitHub.
-2) In Streamlit Cloud, create a new app and point it at this repo.
-3) Set the **Main file path** to `app/ui/App.py`.
-4) Add the environment variable `OPENAI_API_KEY` in the app settings.
-5) Deploy.
-
-### Notes
-- Dependencies are declared in `requirements.txt` and include Streamlit + OpenAI + LangChain.
-- If you want a **LangChain-only** deployment, keep the entrypoint above and set
-  `APP_IMPL=langchain` (default).
-
-### Implementation toggle (dev/review)
-- `APP_IMPL` controls which pages are shown: `langchain` (default), `openai`, or `both`.
-- Set `ALLOW_IMPL_SWITCH=1` to show a sidebar toggle that lets reviewers switch views.
-
-## 🧭 Repo navigation
-
-REQUIREMENTS.md — MVP spec + acceptance criteria
-
-PLAN.md — step-by-step implementation plan
-
-AGENTS.md — canonical instructions for AI-assisted development
-
-RULES.md — operational rules snapshot
-
-ARCHITECTURE.md — architecture snapshot
-
-PROGRESS_TRACKING.md — decisions + next steps
-
-FAILED-DEV-INSIGHTS.md — post-mortems after failed attempts
+## 🧭 Repo map
+- 🧩 `REQUIREMENTS.md` — product scope + acceptance criteria
+- 🗺️ `ARCHITECTURE.md` — architecture snapshot
+- 🧱 `PLAN.md` — implementation steps
+- 📌 `PROGRESS_TRACKING.md` — decisions + current state
+- 🧰 `RULES.md` — tooling + testing rules
+- 🤖 `AGENTS.md` — AI workflow contract
+- 🧯 `FAILED-DEV-INSIGHTS.md` — post-mortems
+- 🧭 `REPO_GUIDE.md` — module map and flow
