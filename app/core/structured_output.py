@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 # Schema used by the OpenAI client to enforce structured JSON output.
 STRUCTURED_OUTPUT_SCHEMA: dict[str, object] = {
     "name": "interview_practice_response",
@@ -81,6 +83,81 @@ STRUCTURED_OUTPUT_GUIDANCE = (
     "(e.g., **bold** for emphasis). Do not wrap the JSON in code fences.\n"
     "Do not include markdown, prose outside JSON, or extra keys."
 )
+
+_REQUIRED_KEYS = {
+    "target_role_context",
+    "cv_note",
+    "alignments",
+    "gaps_or_risk_areas",
+    "interview_questions",
+    "next_step_suggestions",
+}
+_TAGGED_QUESTION_PATTERN = re.compile(r"^\[[^\]]+\]\s*\S")
+
+
+def validate_structured_response(response: dict[str, object]) -> tuple[bool, str | None]:
+    """Validate the structured response against the contract expectations."""
+
+    missing = _REQUIRED_KEYS.difference(response.keys())
+    if missing:
+        return False, "The model response was missing required fields. Please try again."
+
+    extra = set(response.keys()).difference(_REQUIRED_KEYS)
+    if extra:
+        return False, "The model response included unexpected fields. Please try again."
+
+    def _validate_list(
+        name: str,
+        value: object,
+        min_items: int | None,
+        max_items: int | None,
+        require_tagged_questions: bool = False,
+    ) -> tuple[bool, str | None]:
+        if not isinstance(value, list):
+            return False, f"The model response field '{name}' must be a list."
+        if min_items is not None and len(value) < min_items:
+            return False, f"The model response field '{name}' is too short."
+        if max_items is not None and len(value) > max_items:
+            return False, f"The model response field '{name}' is too long."
+        for item in value:
+            if not isinstance(item, str) or not item.strip():
+                return False, f"The model response field '{name}' must contain strings."
+            if require_tagged_questions and not _TAGGED_QUESTION_PATTERN.match(item.strip()):
+                return False, "Each interview question must start with a tag like [Technical]."
+        return True, None
+
+    ok, message = _validate_list("target_role_context", response.get("target_role_context"), 1, 3)
+    if not ok:
+        return False, message
+
+    cv_note = response.get("cv_note")
+    if cv_note is not None:
+        if not isinstance(cv_note, str) or not cv_note.strip():
+            return False, "The model response field 'cv_note' must be a string or null."
+
+    ok, message = _validate_list("alignments", response.get("alignments"), 0, 5)
+    if not ok:
+        return False, message
+
+    ok, message = _validate_list("gaps_or_risk_areas", response.get("gaps_or_risk_areas"), 1, None)
+    if not ok:
+        return False, message
+
+    ok, message = _validate_list(
+        "interview_questions",
+        response.get("interview_questions"),
+        5,
+        5,
+        require_tagged_questions=True,
+    )
+    if not ok:
+        return False, message
+
+    ok, message = _validate_list("next_step_suggestions", response.get("next_step_suggestions"), 2, 4)
+    if not ok:
+        return False, message
+
+    return True, None
 
 
 def render_markdown_from_response(response: dict[str, object]) -> str:

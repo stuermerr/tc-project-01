@@ -16,6 +16,7 @@ from app.core.safety import (
     validate_inputs,
     validate_output,
 )
+from app.core.structured_output import validate_structured_response
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -127,10 +128,13 @@ def _parse_structured_output(raw_text: str) -> tuple[bool, dict[str, object] | s
         )
         return False, "The model response was missing required fields. Please try again."
 
-    questions = parsed.get("interview_questions")
-    if not isinstance(questions, list) or len(questions) != 5:
-        _LOGGER.error("structured_output_parse_failed", extra={"reason": "bad_questions"})
-        return False, "The model did not return exactly 5 questions. Please try again."
+    ok, message = validate_structured_response(parsed)
+    if not ok:
+        _LOGGER.error(
+            "structured_output_parse_failed",
+            extra={"reason": "contract_validation_failed"},
+        )
+        return False, message or "The model response did not match the required format."
 
     return True, parsed
 

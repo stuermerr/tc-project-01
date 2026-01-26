@@ -1,6 +1,6 @@
-"""Tests for structured output markdown rendering."""
+"""Tests for structured output markdown rendering and validation."""
 
-from app.core.structured_output import render_markdown_from_response
+from app.core.structured_output import render_markdown_from_response, validate_structured_response
 
 
 def test_render_markdown_from_response_builds_sections():
@@ -53,3 +53,49 @@ def test_render_markdown_from_response_skips_empty_sections():
 
     assert "## CV Note" not in markdown
     assert "## Alignments" not in markdown
+
+
+def test_validate_structured_response_rejects_non_list_field():
+    """Verify validate structured response rejects non-list field."""
+    response = {
+        "target_role_context": ["Role summary"],
+        "cv_note": "Paste your CV for better alignment.",
+        "alignments": "not-a-list",
+        "gaps_or_risk_areas": ["Gap point"],
+        "interview_questions": [
+            "[Technical] Question one?",
+            "[Behavioral] Question two?",
+            "[Role-specific] Question three?",
+            "[Screening] Question four?",
+            "[Onsite] Question five?",
+        ],
+        "next_step_suggestions": ["Next step", "Another step"],
+    }
+
+    ok, message = validate_structured_response(response)
+
+    assert ok is False
+    assert message
+
+
+def test_validate_structured_response_rejects_invalid_cv_note_type():
+    """Verify validate structured response rejects invalid cv_note type."""
+    response = {
+        "target_role_context": ["Role summary"],
+        "cv_note": 123,
+        "alignments": ["Alignment point"],
+        "gaps_or_risk_areas": ["Gap point"],
+        "interview_questions": [
+            "[Technical] Question one?",
+            "[Behavioral] Question two?",
+            "[Role-specific] Question three?",
+            "[Screening] Question four?",
+            "[Onsite] Question five?",
+        ],
+        "next_step_suggestions": ["Next step", "Another step"],
+    }
+
+    ok, message = validate_structured_response(response)
+
+    assert ok is False
+    assert message
