@@ -32,7 +32,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # edit .env and set OPENAI_API_KEY=...
 
-streamlit run app/ui/Interview_Preparation_Chat.py
+streamlit run "app/ui/Interview_Preparation_Chat_(OpenAI_API).py"
 ```
 
 ## 🧪 Run tests
@@ -43,20 +43,20 @@ pytest -q
 ## 🚀 Deploy on Streamlit Cloud
 This app is designed to deploy from a single entrypoint. Use the multipage root:
 
-- **Entrypoint**: `app/ui/Interview_Preparation_Chat.py`
+- **Entrypoint**: `app/ui/Interview_Preparation_Chat_(OpenAI_API).py`
   - This launches the chat landing page and exposes the classic + LangChain pages via `app/ui/pages/`.
 
 ### Steps
 1) Push this repo to GitHub.
 2) In Streamlit Cloud, create a new app and point it at this repo.
-3) Set the **Main file path** to `app/ui/Interview_Preparation_Chat.py`.
+3) Set the **Main file path** to `app/ui/Interview_Preparation_Chat_(OpenAI_API).py`.
 4) Add the environment variable `OPENAI_API_KEY` in the app settings.
 5) Deploy.
 
 ### Notes
 - Dependencies are declared in `requirements.txt` and include Streamlit + OpenAI + LangChain.
 - If you want a **LangChain-only** deployment, you can instead set the main file to
-  `app/ui/pages/2_LangChain_Generate_Questions.py`, but the default entrypoint above is preferred.
+  `app/ui/pages/3_Interview_Questions_Generator_(LangChain).py`, but the default entrypoint above is preferred.
 
 ## 🧭 Repo navigation
 

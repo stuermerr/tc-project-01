@@ -25,5 +25,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    # Allow `python Interview_Preparation_Chat.py` for local debugging.
+    # Allow direct execution for local debugging.
     main()
