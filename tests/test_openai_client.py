@@ -100,3 +100,28 @@ def test_generate_completion_uses_model_override(monkeypatch):
     assert result == "mocked-response"
     last_kwargs = created_clients[0].chat.completions.last_kwargs
     assert last_kwargs["model"] == override_model
+
+
+def test_generate_chat_completion_omits_response_format(monkeypatch):
+    # Track client creation to inspect the request parameters.
+    created_clients: list[_DummyOpenAI] = []
+
+    # Provide a factory so the wrapper uses our dummy client.
+    def _factory():
+        return _DummyOpenAI(created_clients)
+
+    monkeypatch.setattr(openai_client, "OpenAI", _factory)
+    messages = [
+        {"role": "system", "content": "system"},
+        {"role": "user", "content": "user"},
+    ]
+
+    # Call the chat wrapper and capture the result.
+    ok, result = openai_client.generate_chat_completion(
+        messages, temperature=0.1, model_name=get_allowed_models()[0]
+    )
+
+    assert ok is True
+    assert result == "mocked-response"
+    last_kwargs = created_clients[0].chat.completions.last_kwargs
+    assert "response_format" not in last_kwargs
