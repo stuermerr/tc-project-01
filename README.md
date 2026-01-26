@@ -15,8 +15,8 @@
 
 ## ⬇️ Clone
 ```bash
-git clone <YOUR_REPO_URL>.git
-cd <YOUR_REPO_DIR>
+git clone https://github.com/TuringCollegeSubmissions/psturm-AE.1.5.git
+cd psturm-AE.1.5
 ```
 
 ## 🔐 Environment
