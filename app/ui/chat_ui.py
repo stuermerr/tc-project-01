@@ -20,8 +20,6 @@ from app.core.prompts import get_chat_prompt_variants
 from app.core.safety import check_rate_limit
 
 _LOGGER = logging.getLogger(__name__)
-_JOB_DESCRIPTION_KEY = "shared_job_description"
-_CV_TEXT_KEY = "shared_cv_text"
 
 # Keep a conservative character limit so chat history stays manageable.
 _MAX_HISTORY_CHARS = 4000
@@ -70,12 +68,6 @@ def render_chat_ui() -> None:
     # Load the supported model list so the UI stays in sync with the backend.
     allowed_models = get_allowed_models()
 
-    # Initialize shared session state so JD/CV persist across pages in this session.
-    if _JOB_DESCRIPTION_KEY not in st.session_state:
-        st.session_state[_JOB_DESCRIPTION_KEY] = ""
-    if _CV_TEXT_KEY not in st.session_state:
-        st.session_state[_CV_TEXT_KEY] = ""
-
     # Place JD and CV side-by-side at the top to match the classic layout.
     col_left, col_right = st.columns(2)
     with col_left:
@@ -83,14 +75,12 @@ def render_chat_ui() -> None:
             "Job Description (optional)",
             height=220,
             placeholder="Paste the target role description here.",
-            key=_JOB_DESCRIPTION_KEY,
         )
     with col_right:
         cv_text = st.text_area(
             "CV / Resume (optional)",
             height=220,
             placeholder="Paste your CV or resume here.",
-            key=_CV_TEXT_KEY,
         )
 
     # Collect settings below the JD/CV inputs in a single row.
