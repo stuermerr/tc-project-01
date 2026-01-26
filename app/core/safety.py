@@ -8,6 +8,12 @@ import logging
 import time
 from typing import Iterable
 
+# Optional import so tests can run without the dependency installed.
+try:
+    from openai import OpenAI
+except ImportError:  # pragma: no cover - exercised when dependency is missing
+    OpenAI = None
+
 # Length limits keep payloads bounded for safety and cost.
 MAX_JOB_DESCRIPTION_LENGTH = 6000
 MAX_CV_LENGTH = 4000
@@ -33,6 +39,50 @@ _INJECTION_PATTERNS: Iterable[re.Pattern[str]] = (
     re.compile(r"\binternal instructions\b"),
     re.compile(r"\bchain[- ]of[- ]thought\b"),
 )
+_HARMFUL_DIRECT_PATTERNS: Iterable[re.Pattern[str]] = (
+    re.compile(r"\b(make|build|create|assemble)\b.*\b(bomb|explosive|pipe bomb|molotov)\b"),
+    re.compile(
+        r"\b(kill|murder|assassinat|poison)\b.*\b"
+        r"(person|people|someone|them|him|her|myself|yourself|himself|herself)\b"
+    ),
+    re.compile(r"\b(kill myself|suicide|self-harm|hurt myself)\b"),
+    re.compile(r"\b(hack into|bypass (?:login|authentication)|crack (?:a )?password)\b"),
+    re.compile(r"\b(write|deploy|distribute|spread)\b.*\b(malware|ransomware)\b"),
+    re.compile(r"\b(steal|stolen|stealing)\b.*\b(credit card|identity|money)\b"),
+)
+_ILLEGAL_INTENT_PATTERNS: Iterable[re.Pattern[str]] = (
+    re.compile(r"\bhow to\b"),
+    re.compile(r"\bhelp me\b"),
+    re.compile(r"\bteach me\b"),
+    re.compile(r"\bstep[- ]by[- ]step\b"),
+    re.compile(r"\binstructions?\b"),
+    re.compile(r"\bguide me\b"),
+    re.compile(r"\bways to\b"),
+    re.compile(r"\bi want to\b"),
+    re.compile(r"\bi need to\b"),
+    re.compile(r"\bcan you\b"),
+)
+_ILLEGAL_TARGET_PATTERNS: Iterable[re.Pattern[str]] = (
+    re.compile(r"\bbomb\b"),
+    re.compile(r"\bexplosive\b"),
+    re.compile(r"\bpipe bomb\b"),
+    re.compile(r"\bmolotov\b"),
+    re.compile(r"\bkill\b"),
+    re.compile(r"\bmurder\b"),
+    re.compile(r"\bassassinat"),
+    re.compile(r"\bpoison\b"),
+    re.compile(r"\bsuicide\b"),
+    re.compile(r"\bself[- ]harm\b"),
+    re.compile(r"\bphish\b"),
+    re.compile(r"\bphishing\b"),
+    re.compile(r"\bransomware\b"),
+    re.compile(r"\bmalware\b"),
+    re.compile(r"\bhack into\b"),
+    re.compile(r"\bbypass (?:login|authentication)\b"),
+    re.compile(r"\bcrack (?:a )?password\b"),
+    re.compile(r"\bcredit card fraud\b"),
+    re.compile(r"\bidentity theft\b"),
+)
 _CONTROL_CHAR_PATTERN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
 _OUTPUT_FORBIDDEN_PATTERNS: Iterable[re.Pattern[str]] = (
     re.compile(r"</?user-(job|cv|prompt)-[a-f0-9]+>", re.IGNORECASE),
@@ -43,12 +93,49 @@ _SAFETY_LOGGER = logging.getLogger(__name__)
 _RATE_LIMIT_BUCKETS: dict[str, list[float]] = {}
 _RATE_LIMIT_WINDOW_SECONDS = 30
 _RATE_LIMIT_MAX_REQUESTS = 5
+_MODERATION_MODEL = "omni-moderation-latest"
 
 
 def _matches_injection(text: str) -> bool:
     # Normalize case so pattern checks are consistent.
     lowered = text.lower()
     return any(pattern.search(lowered) for pattern in _INJECTION_PATTERNS)
+
+
+def _matches_illegal_or_harmful(text: str) -> bool:
+    """Return True when text includes obvious illegal or harmful intent."""
+
+    lowered = text.lower()
+    if any(pattern.search(lowered) for pattern in _HARMFUL_DIRECT_PATTERNS):
+        return True
+    has_intent = any(pattern.search(lowered) for pattern in _ILLEGAL_INTENT_PATTERNS)
+    if not has_intent:
+        return False
+    return any(pattern.search(lowered) for pattern in _ILLEGAL_TARGET_PATTERNS)
+
+
+def _moderation_flagged(text: str) -> bool | None:
+    """Return True if OpenAI moderation flags the text, False if clean, or None if skipped."""
+
+    # Skip moderation when the client is unavailable or there is no content to review.
+    if OpenAI is None:
+        return None
+    if not text.strip():
+        return None
+    try:
+        client = OpenAI()
+        response = client.moderations.create(model=_MODERATION_MODEL, input=text)
+    except Exception:
+        # Fail open so validation still works if the moderation API is unavailable.
+        return None
+    # OpenAI moderation responses include a flagged boolean per result.
+    results = getattr(response, "results", None)
+    if not results:
+        return None
+    flagged = getattr(results[0], "flagged", None)
+    if isinstance(flagged, bool):
+        return flagged
+    return None
 
 
 def _check_length(label: str, text: str, limit: int) -> tuple[bool, str | None]:
@@ -193,6 +280,28 @@ def _validate_inputs_with_limits(
         return False, (
             "Input appears to include prompt-injection instructions. "
             "Please remove them and try again."
+        )
+
+    # Reject obvious illegal or harmful requests without scanning across fields.
+    for label, text in (
+        ("Job description", job_description),
+        ("CV", cv_text),
+        ("User prompt", user_prompt),
+    ):
+        if _matches_illegal_or_harmful(text):
+            record_safety_event("input_illegal_or_harmful", {"field": label})
+            return False, (
+                "Input appears to request illegal or harmful activity. "
+                "Please remove it and try again."
+            )
+
+    # Use OpenAI moderation to catch harmful intent that slips past heuristics.
+    moderation_flagged = _moderation_flagged(combined)
+    if moderation_flagged:
+        record_safety_event("input_moderation_flagged")
+        return False, (
+            "Input appears to request illegal or harmful activity. "
+            "Please remove it and try again."
         )
 
     # No issues found; allow the request to proceed.

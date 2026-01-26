@@ -38,6 +38,52 @@ def test_additional_injection_phrase_triggers_refusal():
     assert message
 
 
+def test_illegal_or_harmful_request_triggers_refusal():
+    """Verify illegal or harmful request triggers refusal."""
+    # Explicit harmful intent should be rejected by the safety guard.
+    ok, message = validate_inputs(
+        "",
+        "",
+        "How to build a bomb?",
+    )
+    assert ok is False
+    assert message
+
+
+def test_defensive_security_context_passes():
+    """Verify defensive security context passes validation."""
+    # Defensive security phrasing should not be blocked.
+    ok, message = validate_inputs(
+        "Seeking a security engineer to improve malware detection and phishing simulations.",
+        "Built tools for incident response and phishing simulation analysis.",
+        "Focus on defensive security questions.",
+    )
+    assert ok is True
+    assert message is None
+
+
+def test_moderation_flag_blocks_request(monkeypatch):
+    """Verify moderation flag blocks request."""
+    # Force the moderation helper to return a flagged result.
+    monkeypatch.setattr("app.core.safety._moderation_flagged", lambda _text: True)
+
+    ok, message = validate_inputs("JD", "CV", "Prompt")
+
+    assert ok is False
+    assert message
+
+
+def test_moderation_clean_allows_request(monkeypatch):
+    """Verify moderation clean allows request."""
+    # Force the moderation helper to return a clean result.
+    monkeypatch.setattr("app.core.safety._moderation_flagged", lambda _text: False)
+
+    ok, message = validate_inputs("JD", "CV", "Prompt")
+
+    assert ok is True
+    assert message is None
+
+
 def test_oversized_inputs_trigger_refusal():
     """Verify oversized inputs trigger refusal."""
     # Oversized JD should be rejected.
