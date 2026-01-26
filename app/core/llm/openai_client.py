@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.core.model_catalog import DEFAULT_MODEL
+from app.core.model_catalog import DEFAULT_MODEL, is_gpt5_model
 from app.core.structured_output import STRUCTURED_OUTPUT_SCHEMA
 
 _DOTENV_LOADED = False
@@ -37,9 +37,10 @@ def _load_dotenv_once() -> None:
 
 def _request_completion(
     messages: list[dict[str, str]],
-    temperature: float,
+    temperature: float | None,
     model_name: str | None = None,
     response_format: dict[str, object] | None = None,
+    reasoning_effort: str | None = None,
 ) -> tuple[bool, str]:
     """Send a chat completion request with optional response formatting."""
 
@@ -61,7 +62,8 @@ def _request_completion(
         "openai_request",
         extra={
             "model": selected_model,
-            "temperature": temperature,
+            "temperature": temperature if temperature is not None else "default",
+            "reasoning_effort": reasoning_effort or "default",
             "message_count": len(messages),
             "messages_total_length": sum(len(msg["content"]) for msg in messages),
             "response_format": "json_schema" if response_format else "text",
@@ -71,10 +73,13 @@ def _request_completion(
     request_payload: dict[str, Any] = {
         "model": selected_model,
         "messages": messages,
-        "temperature": temperature,
     }
+    if temperature is not None and not is_gpt5_model(selected_model):
+        request_payload["temperature"] = temperature
     if response_format:
         request_payload["response_format"] = response_format
+    if reasoning_effort and is_gpt5_model(selected_model):
+        request_payload["reasoning"] = {"effort": reasoning_effort}
     response = client.chat.completions.create(**request_payload)
     # Extract the first response choice for a single-turn UI.
     message = response.choices[0].message
@@ -88,8 +93,9 @@ def _request_completion(
 
 def generate_completion(
     messages: list[dict[str, str]],
-    temperature: float,
+    temperature: float | None,
     model_name: str | None = None,
+    reasoning_effort: str | None = None,
 ) -> tuple[bool, str]:
     """Generate a structured completion using the configured OpenAI model."""
 
@@ -98,14 +104,21 @@ def generate_completion(
         temperature,
         model_name=model_name,
         response_format={"type": "json_schema", "json_schema": STRUCTURED_OUTPUT_SCHEMA},
+        reasoning_effort=reasoning_effort,
     )
 
 
 def generate_chat_completion(
     messages: list[dict[str, str]],
-    temperature: float,
+    temperature: float | None,
     model_name: str | None = None,
+    reasoning_effort: str | None = None,
 ) -> tuple[bool, str]:
     """Generate a free-form chat completion using the configured OpenAI model."""
 
-    return _request_completion(messages, temperature, model_name=model_name)
+    return _request_completion(
+        messages,
+        temperature,
+        model_name=model_name,
+        reasoning_effort=reasoning_effort,
+    )

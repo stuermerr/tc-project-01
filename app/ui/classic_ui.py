@@ -8,7 +8,13 @@ import uuid
 import streamlit as st
 
 from app.core.dataclasses import RequestPayload
-from app.core.model_catalog import DEFAULT_MODEL, get_allowed_models
+from app.core.model_catalog import (
+    DEFAULT_MODEL,
+    DEFAULT_REASONING_EFFORT,
+    REASONING_EFFORT_LEVELS,
+    get_allowed_models,
+    is_gpt5_model,
+)
 from app.core.orchestration import generate_questions
 from app.core.prompts import get_prompt_variants
 from app.core.safety import check_rate_limit
@@ -22,8 +28,9 @@ def _build_payload(
     cv_text: str,
     user_prompt: str,
     prompt_variant_id: int,
-    temperature: float,
+    temperature: float | None,
     model_name: str,
+    reasoning_effort: str | None,
 ) -> RequestPayload:
     # Bundle raw UI inputs into a typed payload for the controller.
     return RequestPayload(
@@ -33,6 +40,7 @@ def _build_payload(
         prompt_variant_id=prompt_variant_id,
         temperature=temperature,
         model_name=model_name,
+        reasoning_effort=reasoning_effort,
     )
 
 
@@ -49,6 +57,13 @@ def render_classic_ui() -> None:
 
     # Load the supported model list so the UI stays in sync with the backend.
     allowed_models = get_allowed_models()
+
+    # Keep model selection outside the form so the settings react immediately.
+    model_name = st.selectbox(
+        "Model",
+        options=allowed_models,
+        index=allowed_models.index(DEFAULT_MODEL) if DEFAULT_MODEL in allowed_models else 0,
+    )
 
     with st.form("question_generator_form"):
         # Place JD and CV side-by-side at the top for easy comparison.
@@ -68,33 +83,36 @@ def render_classic_ui() -> None:
                 placeholder="Paste your CV or resume here.",
             )
 
-        # Wrap settings in a form so Enter can submit from the single-line prompt field.
         # Collect settings below the JD/CV inputs in a single row.
         settings_left, settings_mid, settings_right = st.columns(3)
         with settings_left:
-            # Let users pick from the supported models while defaulting to the baseline.
-            model_name = st.selectbox(
-                "Model",
-                options=allowed_models,
-                index=allowed_models.index(DEFAULT_MODEL)
-                if DEFAULT_MODEL in allowed_models
-                else 0,
-            )
-        with settings_mid:
             # Prompt variant stays visible next to the model selector.
             selected_label = st.selectbox(
                 "Prompt variant",
                 options=list(variant_labels.keys()),
             )
+        with settings_mid:
+            if is_gpt5_model(model_name):
+                # GPT-5 models use reasoning effort instead of temperature.
+                reasoning_effort = st.selectbox(
+                    "Reasoning effort",
+                    options=REASONING_EFFORT_LEVELS,
+                    index=REASONING_EFFORT_LEVELS.index(DEFAULT_REASONING_EFFORT),
+                )
+                temperature = None
+            else:
+                # Keep temperature tuning for non-GPT-5 models.
+                temperature = st.slider(
+                    "Temperature",
+                    min_value=0.0,
+                    max_value=1.0,
+                    value=0.2,
+                    step=0.05,
+                )
+                reasoning_effort = None
         with settings_right:
-            # Keep temperature tuning accessible without crowding the inputs.
-            temperature = st.slider(
-                "Temperature",
-                min_value=0.0,
-                max_value=1.0,
-                value=0.2,
-                step=0.05,
-            )
+            # Keep layout balanced with a spacer column.
+            st.empty()
 
         # Smaller single-line prompt lets Enter submit the form.
         user_prompt = st.text_input(
@@ -118,7 +136,8 @@ def render_classic_ui() -> None:
                 "cv_text_length": len(cv_text),
                 "user_prompt_length": len(user_prompt),
                 "selected_variant": selected_label,
-                "temperature": temperature,
+                "temperature": temperature if temperature is not None else "default",
+                "reasoning_effort": reasoning_effort or "default",
                 "model_name": model_name,
             },
         )
@@ -139,6 +158,7 @@ def render_classic_ui() -> None:
             prompt_variant_id=variant_labels[selected_label],
             temperature=temperature,
             model_name=model_name,
+            reasoning_effort=reasoning_effort,
         )
 
         # Show a spinner while the model call runs.
@@ -160,8 +180,14 @@ def render_classic_ui() -> None:
             st.markdown(response)
 
         # Echo metadata so users can reproduce results.
-        st.caption(
-            f"Model: {model_name} | Prompt variant: {selected_label} | "
-            f"Temperature: {temperature:.2f}"
-        )
+        if temperature is None:
+            st.caption(
+                f"Model: {model_name} | Prompt variant: {selected_label} | "
+                f"Reasoning effort: {reasoning_effort}"
+            )
+        else:
+            st.caption(
+                f"Model: {model_name} | Prompt variant: {selected_label} | "
+                f"Temperature: {temperature:.2f}"
+            )
         _LOGGER.info("ui_request_success")

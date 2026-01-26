@@ -66,7 +66,8 @@ def _payload_metadata(payload: RequestPayload) -> dict[str, int | float | str]:
         "cv_text_length": len(payload.cv_text),
         "user_prompt_length": len(payload.user_prompt),
         "prompt_variant_id": payload.prompt_variant_id,
-        "temperature": payload.temperature,
+        "temperature": payload.temperature if payload.temperature is not None else "default",
+        "reasoning_effort": payload.reasoning_effort or "default",
         "model_name": payload.model_name,
     }
 
@@ -170,7 +171,10 @@ def generate_questions(payload: RequestPayload) -> tuple[bool, dict[str, object]
     )
     llm_start = time.monotonic()
     ok, raw_text = generate_completion(
-        messages, payload.temperature, model_name=payload.model_name
+        messages,
+        payload.temperature,
+        model_name=payload.model_name,
+        reasoning_effort=payload.reasoning_effort,
     )
     llm_duration_ms = int((time.monotonic() - llm_start) * 1000)
     _LOGGER.info(
@@ -229,7 +233,10 @@ def generate_chat_response(payload: RequestPayload) -> tuple[bool, str]:
     )
     llm_start = time.monotonic()
     ok, raw_text = generate_chat_completion(
-        messages, payload.temperature, model_name=payload.model_name
+        messages,
+        payload.temperature,
+        model_name=payload.model_name,
+        reasoning_effort=payload.reasoning_effort,
     )
     llm_duration_ms = int((time.monotonic() - llm_start) * 1000)
     _LOGGER.info(

@@ -14,7 +14,13 @@ from app.core.chat_history import (
     trim_chat_history,
 )
 from app.core.dataclasses import RequestPayload
-from app.core.model_catalog import DEFAULT_MODEL, get_allowed_models
+from app.core.model_catalog import (
+    DEFAULT_MODEL,
+    DEFAULT_REASONING_EFFORT,
+    REASONING_EFFORT_LEVELS,
+    get_allowed_models,
+    is_gpt5_model,
+)
 from app.core.orchestration import generate_chat_response
 from app.core.prompts import get_chat_prompt_variants
 from app.core.safety import check_rate_limit
@@ -30,8 +36,9 @@ def _build_payload(
     cv_text: str,
     user_prompt: str,
     prompt_variant_id: int,
-    temperature: float,
+    temperature: float | None,
     model_name: str,
+    reasoning_effort: str | None,
 ) -> RequestPayload:
     # Bundle raw UI inputs into a typed payload for the controller.
     return RequestPayload(
@@ -41,6 +48,7 @@ def _build_payload(
         prompt_variant_id=prompt_variant_id,
         temperature=temperature,
         model_name=model_name,
+        reasoning_effort=reasoning_effort,
     )
 
 
@@ -99,13 +107,22 @@ def render_chat_ui() -> None:
             options=list(variant_labels.keys()),
         )
     with settings_right:
-        temperature = st.slider(
-            "Temperature",
-            min_value=0.0,
-            max_value=1.0,
-            value=0.2,
-            step=0.05,
-        )
+        if is_gpt5_model(model_name):
+            reasoning_effort = st.selectbox(
+                "Reasoning effort",
+                options=REASONING_EFFORT_LEVELS,
+                index=REASONING_EFFORT_LEVELS.index(DEFAULT_REASONING_EFFORT),
+            )
+            temperature = None
+        else:
+            temperature = st.slider(
+                "Temperature",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.2,
+                step=0.05,
+            )
+            reasoning_effort = None
 
     st.divider()
 
@@ -131,7 +148,8 @@ def render_chat_ui() -> None:
             "cv_text_length": len(cv_text),
             "user_prompt_length": len(user_input),
             "selected_variant": selected_label,
-            "temperature": temperature,
+            "temperature": temperature if temperature is not None else "default",
+            "reasoning_effort": reasoning_effort or "default",
             "model_name": model_name,
         },
     )
@@ -161,6 +179,7 @@ def render_chat_ui() -> None:
         prompt_variant_id=variant_labels[selected_label],
         temperature=temperature,
         model_name=model_name,
+        reasoning_effort=reasoning_effort,
     )
 
     # Generate the assistant response and render it in the chat.

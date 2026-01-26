@@ -18,8 +18,9 @@ class RequestPayload:
     cv_text: str
     user_prompt: str
     prompt_variant_id: int
-    temperature: float
+    temperature: float | None
     model_name: str = DEFAULT_MODEL
+    reasoning_effort: str | None = None
 
 
 # Immutable variant container avoids accidental prompt mutation.

@@ -102,6 +102,36 @@ def test_generate_completion_uses_model_override(monkeypatch):
     assert last_kwargs["model"] == override_model
 
 
+def test_generate_completion_gpt5_uses_reasoning_effort(monkeypatch):
+    # Track client creation to inspect the request parameters.
+    created_clients: list[_DummyOpenAI] = []
+
+    # Provide a factory so the wrapper uses our dummy client.
+    def _factory():
+        return _DummyOpenAI(created_clients)
+
+    monkeypatch.setattr(openai_client, "OpenAI", _factory)
+    messages = [
+        {"role": "system", "content": "system"},
+        {"role": "user", "content": "user"},
+    ]
+
+    ok, result = openai_client.generate_completion(
+        messages,
+        temperature=None,
+        model_name="gpt-5-nano",
+        reasoning_effort="medium",
+    )
+
+    assert ok is True
+    assert result == "mocked-response"
+    last_kwargs = created_clients[0].chat.completions.last_kwargs
+    assert last_kwargs["model"] == "gpt-5-nano"
+    assert "temperature" not in last_kwargs
+    assert last_kwargs["reasoning"] == {"effort": "medium"}
+    assert last_kwargs["response_format"]["type"] == "json_schema"
+
+
 def test_generate_chat_completion_omits_response_format(monkeypatch):
     # Track client creation to inspect the request parameters.
     created_clients: list[_DummyOpenAI] = []
@@ -125,3 +155,4 @@ def test_generate_chat_completion_omits_response_format(monkeypatch):
     assert result == "mocked-response"
     last_kwargs = created_clients[0].chat.completions.last_kwargs
     assert "response_format" not in last_kwargs
+    assert last_kwargs["temperature"] == 0.1
