@@ -1,3 +1,5 @@
+"""Tests for prompt builder message assembly."""
+
 import re
 
 from app.core.dataclasses import RequestPayload
@@ -12,6 +14,7 @@ def _extract_tag(content: str, label: str) -> str | None:
 
 
 def test_build_messages_role_ordering():
+    """Verify build messages role ordering."""
     # Use the first variant to keep the test stable.
     variant = get_prompt_variants()[0]
     # Build a payload with all fields filled to test full output.
@@ -37,6 +40,7 @@ def test_build_messages_role_ordering():
 
 
 def test_build_messages_missing_fields_are_consistent():
+    """Verify build messages missing fields are consistent."""
     # Use a minimal payload to verify placeholder behavior.
     variant = get_prompt_variants()[0]
     payload = RequestPayload(
@@ -57,6 +61,7 @@ def test_build_messages_missing_fields_are_consistent():
 
 
 def test_build_messages_generate_unique_salts():
+    """Verify build messages generate unique salts."""
     # Different calls should yield distinct salted tags.
     variant = get_prompt_variants()[0]
     payload = RequestPayload(

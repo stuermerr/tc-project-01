@@ -1,3 +1,5 @@
+"""Tests for the OpenAI client wrapper behavior."""
+
 from app.core.llm import openai_client
 from app.core.model_catalog import get_allowed_models, get_reasoning_effort_options
 from app.core.structured_output import STRUCTURED_OUTPUT_SCHEMA
@@ -46,6 +48,7 @@ class _DummyOpenAI:
 
 
 def test_generate_completion_builds_payload(monkeypatch):
+    """Verify generate completion builds payload."""
     # Track client creation to inspect the request parameters.
     created_clients: list[_DummyOpenAI] = []
 
@@ -77,6 +80,7 @@ def test_generate_completion_builds_payload(monkeypatch):
 
 
 def test_generate_completion_uses_model_override(monkeypatch):
+    """Verify generate completion uses model override."""
     # Track client creation to inspect the request parameters.
     created_clients: list[_DummyOpenAI] = []
 
@@ -103,6 +107,7 @@ def test_generate_completion_uses_model_override(monkeypatch):
 
 
 def test_generate_completion_gpt5_uses_reasoning_effort(monkeypatch):
+    """Verify generate completion gpt5 uses reasoning effort."""
     # Track client creation to inspect the request parameters.
     created_clients: list[_DummyOpenAI] = []
 
@@ -133,6 +138,7 @@ def test_generate_completion_gpt5_uses_reasoning_effort(monkeypatch):
 
 
 def test_generate_completion_chat_latest_uses_defaults(monkeypatch):
+    """Verify generate completion chat latest uses defaults."""
     # Track client creation to inspect the request parameters.
     created_clients: list[_DummyOpenAI] = []
 
@@ -160,6 +166,7 @@ def test_generate_completion_chat_latest_uses_defaults(monkeypatch):
 
 
 def test_generate_chat_completion_omits_response_format(monkeypatch):
+    """Verify generate chat completion omits response format."""
     # Track client creation to inspect the request parameters.
     created_clients: list[_DummyOpenAI] = []
 
@@ -186,6 +193,7 @@ def test_generate_chat_completion_omits_response_format(monkeypatch):
 
 
 def test_gpt5_models_accept_reasoning_effort_options(monkeypatch):
+    """Verify gpt5 models accept reasoning effort options."""
     # Track client creation so we can inspect each request payload.
     created_clients: list[_DummyOpenAI] = []
 
@@ -215,6 +223,7 @@ def test_gpt5_models_accept_reasoning_effort_options(monkeypatch):
 
 
 def test_chat_latest_ignores_reasoning_effort(monkeypatch):
+    """Verify chat latest ignores reasoning effort."""
     # Track client creation to inspect the request parameters.
     created_clients: list[_DummyOpenAI] = []
 

@@ -1,7 +1,10 @@
+"""Tests for structured output markdown rendering."""
+
 from app.core.structured_output import render_markdown_from_response
 
 
 def test_render_markdown_from_response_builds_sections():
+    """Verify render markdown from response builds sections."""
     response = {
         "target_role_context": ["Role summary"],
         "cv_note": "Paste your CV for better alignment.",
@@ -30,6 +33,7 @@ def test_render_markdown_from_response_builds_sections():
 
 
 def test_render_markdown_from_response_skips_empty_sections():
+    """Verify render markdown from response skips empty sections."""
     response = {
         "target_role_context": ["Role summary"],
         "cv_note": None,

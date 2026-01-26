@@ -1,3 +1,5 @@
+"""Pytest configuration and shared test setup."""
+
 import sys
 from pathlib import Path
 

@@ -1,3 +1,5 @@
+"""Tests for chat history helpers."""
+
 from app.core.chat_history import (
     ChatMessage,
     append_chat_message,
@@ -7,6 +9,7 @@ from app.core.chat_history import (
 
 
 def test_init_chat_history_creates_list():
+    """Verify init chat history creates list."""
     # Start with an empty state to verify initialization.
     state: dict = {}
 
@@ -18,6 +21,7 @@ def test_init_chat_history_creates_list():
 
 
 def test_append_chat_message_preserves_order():
+    """Verify append chat message preserves order."""
     # Begin with an empty message list.
     messages: list[ChatMessage] = []
 
@@ -30,6 +34,7 @@ def test_append_chat_message_preserves_order():
 
 
 def test_trim_chat_history_enforces_max_chars():
+    """Verify trim chat history enforces max chars."""
     # Build a short history that exceeds the max length.
     messages = [
         ChatMessage(role="user", content="12345"),

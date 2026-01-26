@@ -1,7 +1,10 @@
+"""Tests for prompt variant catalogs."""
+
 from app.core.prompts import get_chat_prompt_variants, get_prompt_variants
 
 
 def test_get_prompt_variants_unique_ids():
+    """Verify get prompt variants unique ids."""
     # Ensure the catalog has enough variants with distinct IDs.
     variants = get_prompt_variants()
     ids = [variant.id for variant in variants]
@@ -10,6 +13,7 @@ def test_get_prompt_variants_unique_ids():
 
 
 def test_prompt_variants_have_system_prompts():
+    """Verify prompt variants have system prompts."""
     # Confirm every variant contains a non-empty system prompt.
     variants = get_prompt_variants()
     for variant in variants:
@@ -17,6 +21,7 @@ def test_prompt_variants_have_system_prompts():
 
 
 def test_prompt_variants_include_safety_rules():
+    """Verify prompt variants include safety rules."""
     # Ensure safety instructions are present in every system prompt.
     variants = get_prompt_variants()
     for variant in variants:
@@ -26,6 +31,7 @@ def test_prompt_variants_include_safety_rules():
 
 
 def test_prompt_variants_include_structured_output_guidance():
+    """Verify prompt variants include structured output guidance."""
     # Ensure JSON output guidance is present in every system prompt.
     variants = get_prompt_variants()
     for variant in variants:
@@ -33,6 +39,7 @@ def test_prompt_variants_include_structured_output_guidance():
 
 
 def test_get_chat_prompt_variants_unique_ids():
+    """Verify get chat prompt variants unique ids."""
     # Ensure the chat catalog has enough variants with distinct IDs.
     variants = get_chat_prompt_variants()
     ids = [variant.id for variant in variants]
@@ -41,6 +48,7 @@ def test_get_chat_prompt_variants_unique_ids():
 
 
 def test_chat_prompt_variants_have_system_prompts():
+    """Verify chat prompt variants have system prompts."""
     # Confirm every chat variant contains a non-empty system prompt.
     variants = get_chat_prompt_variants()
     for variant in variants:
@@ -48,6 +56,7 @@ def test_chat_prompt_variants_have_system_prompts():
 
 
 def test_chat_prompt_variants_include_safety_rules():
+    """Verify chat prompt variants include safety rules."""
     # Ensure safety instructions are present in every chat system prompt.
     variants = get_chat_prompt_variants()
     for variant in variants:
@@ -57,6 +66,7 @@ def test_chat_prompt_variants_include_safety_rules():
 
 
 def test_chat_prompt_variants_omit_structured_output_guidance():
+    """Verify chat prompt variants omit structured output guidance."""
     # Ensure chat prompts do not enforce JSON output guidance.
     variants = get_chat_prompt_variants()
     for variant in variants:
@@ -64,6 +74,7 @@ def test_chat_prompt_variants_omit_structured_output_guidance():
 
 
 def test_chat_prompt_variants_include_initial_response_guidance():
+    """Verify chat prompt variants include initial response guidance."""
     # Ensure the initial response guidance is present for chat prompts.
     variants = get_chat_prompt_variants()
     for variant in variants:

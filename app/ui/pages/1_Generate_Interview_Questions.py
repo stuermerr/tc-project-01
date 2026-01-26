@@ -9,6 +9,7 @@ from app.ui.classic_ui import render_classic_ui
 
 
 def main() -> None:
+    """Run the classic interview questions page."""
     # Ensure standard console logging is active before any log calls.
     setup_logging()
     # Configure the page for the classic mode view.

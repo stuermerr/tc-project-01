@@ -1,3 +1,5 @@
+"""Tests for logging behavior and configuration."""
+
 import logging
 
 from app.core.dataclasses import RequestPayload
@@ -43,6 +45,7 @@ class _DummyOpenAI:
 
 
 def test_orchestration_logs_metadata_without_raw_text(monkeypatch, caplog):
+    """Verify orchestration logs metadata without raw text."""
     # Stub dependencies so we only exercise orchestration behavior.
     def _pass_validation(job_description: str, cv_text: str, user_prompt: str):
         return True, None
@@ -91,6 +94,7 @@ def test_orchestration_logs_metadata_without_raw_text(monkeypatch, caplog):
 
 
 def test_openai_client_logs_metadata_without_prompt_content(monkeypatch, caplog):
+    """Verify openai client logs metadata without prompt content."""
     # Patch the OpenAI client to avoid real API calls.
     monkeypatch.setattr(openai_client, "OpenAI", _DummyOpenAI)
 
@@ -113,6 +117,7 @@ def test_openai_client_logs_metadata_without_prompt_content(monkeypatch, caplog)
 
 
 def test_setup_logging_creates_console_handler():
+    """Verify setup logging creates console handler."""
     # Temporarily clear handlers so we can verify setup_logging adds one.
     root_logger = logging.getLogger()
     original_handlers = list(root_logger.handlers)

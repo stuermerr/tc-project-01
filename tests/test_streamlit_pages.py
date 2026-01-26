@@ -1,3 +1,5 @@
+"""Tests for Streamlit multipage wiring."""
+
 import importlib.util
 from pathlib import Path
 
@@ -5,6 +7,7 @@ import pytest
 
 
 def test_streamlit_classic_page_import_smoke():
+    """Verify streamlit classic page import smoke."""
     # Skip when Streamlit isn't installed so CI stays green.
     pytest.importorskip("streamlit")
 

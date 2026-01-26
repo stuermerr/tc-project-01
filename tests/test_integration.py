@@ -1,3 +1,5 @@
+"""Integration tests for the end-to-end orchestration flow."""
+
 from app.core.dataclasses import RequestPayload
 from app.core.llm import openai_client
 from app.core.orchestration import generate_questions
@@ -55,6 +57,7 @@ class _DummyOpenAI:
 
 
 def test_end_to_end_flow_with_mocked_openai(monkeypatch):
+    """Verify end to end flow with mocked openai."""
     # Patch the OpenAI client so no network calls are made.
     monkeypatch.setattr(openai_client, "OpenAI", _DummyOpenAI)
 

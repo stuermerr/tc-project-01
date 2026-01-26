@@ -1,4 +1,5 @@
-# setup.py
+"""Package setup metadata for local imports and tooling."""
+
 from setuptools import setup, find_packages
 
 # Minimal package metadata so imports work in tests and scripts.

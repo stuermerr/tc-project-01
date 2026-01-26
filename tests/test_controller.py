@@ -1,8 +1,11 @@
+"""Tests for the controller orchestration layer."""
+
 from app.core.orchestration import generate_chat_response, generate_questions
 from app.core.dataclasses import RequestPayload
 
 
 def test_generate_questions_short_circuits_on_safety(monkeypatch):
+    """Verify generate questions short circuits on safety."""
     # Fake a safety failure to ensure the controller stops early.
     def _fail_validation(job_description: str, cv_text: str, user_prompt: str):
         return False, "blocked"
@@ -32,6 +35,7 @@ def test_generate_questions_short_circuits_on_safety(monkeypatch):
 
 
 def test_generate_questions_success_path(monkeypatch):
+    """Verify generate questions success path."""
     # Allow validation to pass so we can test the happy path.
     def _pass_validation(job_description: str, cv_text: str, user_prompt: str):
         return True, None
@@ -77,6 +81,7 @@ def test_generate_questions_success_path(monkeypatch):
 
 
 def test_generate_chat_response_returns_text(monkeypatch):
+    """Verify generate chat response returns text."""
     # Allow validation to pass so we can test the chat path.
     def _pass_validation(job_description: str, cv_text: str, user_prompt: str):
         return True, None
