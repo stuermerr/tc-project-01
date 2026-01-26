@@ -68,3 +68,4 @@ def test_chat_prompt_variants_include_initial_response_guidance():
     variants = get_chat_prompt_variants()
     for variant in variants:
         assert "five preparation questions" in variant.system_prompt
+        assert "Assistant:" in variant.system_prompt

@@ -24,6 +24,8 @@ _CHAT_INITIAL_RESPONSE_GUIDANCE = (
     "mention gaps or risk areas if applicable, include five preparation questions, "
     "and give a few practical tips. "
     "Adapt to the user's prompt and skip irrelevant parts. "
+    "Only apply this initial structure if the transcript has no prior Assistant turn "
+    '(i.e., no line starting with "Assistant:"). Model or setting changes do not reset this. '
     "Prefer bullet points over long paragraphs and use a few relevant emojis to label sections. "
     "Do not output JSON or fixed schemas.\n"
 )
