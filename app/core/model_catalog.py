@@ -13,8 +13,8 @@ ALLOWED_MODELS: list[str] = [
 DEFAULT_MODEL = ALLOWED_MODELS[0]
 GPT5_MODELS = {"gpt-5-nano", "gpt-5.2-chat-latest"}
 _REASONING_EFFORT_BY_MODEL = {
-    "gpt-5-nano": ["medium"],
-    "gpt-5.2-chat-latest": ["medium"],
+    "gpt-5-nano": ["minimal", "low", "medium", "high"],
+    "gpt-5.2-chat-latest": ["minimal", "low", "medium", "high"],
 }
 DEFAULT_REASONING_EFFORT = "medium"
 

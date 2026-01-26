@@ -1,4 +1,8 @@
-from app.core.model_catalog import DEFAULT_MODEL, get_allowed_models
+from app.core.model_catalog import (
+    DEFAULT_MODEL,
+    get_allowed_models,
+    get_reasoning_effort_options,
+)
 
 
 def test_get_allowed_models_returns_expected_list():
@@ -10,3 +14,19 @@ def test_get_allowed_models_returns_expected_list():
 def test_default_model_is_in_catalog():
     # Confirm the default model remains part of the allowed list.
     assert DEFAULT_MODEL in get_allowed_models()
+
+
+def test_get_reasoning_effort_options_for_gpt5():
+    # GPT-5 models should expose the full reasoning effort range.
+    assert get_reasoning_effort_options("gpt-5-nano") == [
+        "minimal",
+        "low",
+        "medium",
+        "high",
+    ]
+    assert get_reasoning_effort_options("gpt-5.2-chat-latest") == [
+        "minimal",
+        "low",
+        "medium",
+        "high",
+    ]
