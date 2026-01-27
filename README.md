@@ -9,8 +9,7 @@
 - 🎚️ Model settings: temperature for `gpt-4o-mini`, reasoning effort for GPT-5.
 
 ## 🌐 Live app
-- https://tc-project-01git-ydv65ajrftafgtfn8yqe9z.streamlit.app/
-
+- https://tc-project-01git-ydv65ajrftafgtfn8yqe9z.streamlit.app/ (ask for access)
 ## 🧰 Tech stack
 - 🖥️ Streamlit
 - 🤖 OpenAI API + LangChain
