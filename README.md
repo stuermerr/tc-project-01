@@ -8,6 +8,9 @@
 - 🛡️ Safety guard blocks obvious prompt injection, illegal/harmful requests (via OpenAI moderation), and enforces length limits.
 - 🎚️ Model settings: temperature for `gpt-4o-mini`, reasoning effort for GPT-5.
 
+## 🌐 Live app
+- https://tc-project-01git-ydv65ajrftafgtfn8yqe9z.streamlit.app/
+
 ## 🧰 Tech stack
 - 🖥️ Streamlit
 - 🤖 OpenAI API + LangChain

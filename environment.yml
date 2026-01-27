@@ -13,3 +13,4 @@ dependencies:
       - langchain>=0.1
       - langchain-openai>=0.1
       - pytest>=7.0
+      - -e .
