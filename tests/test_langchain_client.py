@@ -146,3 +146,25 @@ def test_generate_langchain_chat_response_does_not_parse_json(monkeypatch):
 
     assert ok is True
     assert result == "plain chat response"
+
+
+def test_generate_langchain_cover_letter_requires_jd_cv(monkeypatch):
+    """Verify LangChain cover letter generation requires JD and CV."""
+    # Guard against accidental LLM calls in the refusal path.
+    def _unexpected_call(*args, **kwargs):  # pragma: no cover - should not be called
+        raise AssertionError("LLM should not be called when JD/CV are missing")
+
+    monkeypatch.setattr(langchain_client, "ChatOpenAI", _unexpected_call)
+
+    payload = RequestPayload(
+        job_description="JD",
+        cv_text="",
+        user_prompt="History",
+        prompt_variant_id=101,
+        temperature=0.2,
+    )
+
+    ok, message = langchain_client.generate_langchain_cover_letter_response(payload)
+
+    assert ok is False
+    assert "job description" in message

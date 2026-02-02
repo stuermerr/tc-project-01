@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from app.core.orchestration import generate_chat_response
+from app.core.orchestration import (
+    generate_chat_response,
+    generate_cover_letter_response,
+)
 from app.core.prompts import get_chat_prompt_variants
 from app.ui.chat_ui_common import render_chat_ui as render_chat_ui_common
 
@@ -17,4 +20,5 @@ def render_chat_ui() -> None:
         prompt_variants=variants,
         prompt_label="Prompt variant",
         generate_response=generate_chat_response,
+        generate_cover_letter=generate_cover_letter_response,
     )

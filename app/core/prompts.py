@@ -1,4 +1,4 @@
-"""System prompt variants for interview question generation."""
+"""System prompt variants for interview questions and chat features."""
 
 from __future__ import annotations
 
@@ -37,6 +37,28 @@ _CHAT_FOLLOWUP_GUIDANCE = (
     "and score answers when helpful with a short justification. "
     "Prefer concise bullet points and light emoji section labels for readability. "
     "Ask follow-up questions as needed.\n"
+)
+
+# Cover letter guidance for the chat UI button.
+_COVER_LETTER_GUIDANCE = (
+    "You are an expert career coach writing a formal German cover letter. "
+    "Output only the full cover letter, no commentary or bullet lists. "
+    "Use formal Sie/Sehr geehrte style and keep the length within one A4 page. "
+    "Include a date line, subject line, greeting, body paragraphs, closing, and signature. "
+    "If the JD does not explicitly name the company or job title, use placeholders "
+    "like [Unternehmen] and [Position] instead of guessing. "
+    "Mirror relevant soft-skill keywords from the JD naturally so ATS filters pick them up. "
+    "Highlight 2-3 strengths that match JD requirements using evidence from the CV. "
+    "Show motivation for the company and role. "
+    "Use the chat transcript in the user prompt tag for any user adjustments, "
+    "and prioritize the most recent user instructions.\n"
+)
+
+# Single cover letter prompt used by the chat UI button.
+_COVER_LETTER_PROMPT = PromptVariant(
+    id=201,
+    name="Cover letter (DE)",
+    system_prompt=_SAFETY_RULES + _COVER_LETTER_GUIDANCE,
 )
 
 # System prompt catalog used by the UI dropdown and orchestration layer.
@@ -144,3 +166,10 @@ def get_chat_prompt_variants() -> list[PromptVariant]:
 
     # Return a shallow copy to prevent accidental mutation.
     return list(_CHAT_PROMPT_VARIANTS)
+
+
+def get_cover_letter_prompt() -> PromptVariant:
+    """Return the system prompt used for cover letter generation."""
+
+    # Return the shared prompt to keep the cover letter guidance consistent.
+    return _COVER_LETTER_PROMPT

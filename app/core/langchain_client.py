@@ -13,7 +13,11 @@ from app.core.model_catalog import (
 )
 from app.core.orchestration import _parse_structured_output as parse_structured_output
 from app.core.prompt_builder import build_messages
-from app.core.prompts import get_chat_prompt_variants, get_prompt_variants
+from app.core.prompts import (
+    get_chat_prompt_variants,
+    get_cover_letter_prompt,
+    get_prompt_variants,
+)
 from app.core.safety import (
     sanitize_output,
     validate_chat_inputs,
@@ -111,6 +115,13 @@ def _select_chat_variant(prompt_variant_id: int):
         extra={"requested_variant_id": prompt_variant_id},
     )
     return variants[0]
+
+
+def _has_job_and_cv(payload: RequestPayload) -> bool:
+    """Return True when both JD and CV are present."""
+
+    # Cover letters require both inputs to be meaningful.
+    return bool(payload.job_description.strip()) and bool(payload.cv_text.strip())
 
 
 def _build_langchain_messages(messages: list[dict[str, str]]) -> list[object]:
@@ -314,6 +325,81 @@ def generate_langchain_chat_response(payload: RequestPayload) -> tuple[bool, str
     llm_kwargs = _build_llm_kwargs(payload, selected_model)
     _LOGGER.info(
         "langchain_chat_request",
+        extra={
+            "model": selected_model,
+            "temperature": payload.temperature if payload.temperature is not None else "default",
+            "reasoning_effort": payload.reasoning_effort or "default",
+            "message_count": len(messages),
+            "messages_total_length": sum(len(msg["content"]) for msg in messages),
+        },
+    )
+    llm = ChatOpenAI(**llm_kwargs)
+
+    # Invoke the model and sanitize the free-form response.
+    response = llm.invoke(_build_langchain_messages(messages))
+    raw_text = _extract_response_text(response)
+    ok, sanitized = _sanitize_freeform_output(raw_text)
+    if not ok:
+        return False, sanitized
+    return True, sanitized
+
+
+def generate_langchain_cover_letter_response(payload: RequestPayload) -> tuple[bool, str]:
+    """Generate a German cover letter via LangChain."""
+
+    request_meta = _payload_metadata(payload)
+    _LOGGER.info("langchain_cover_letter_request_received", extra=request_meta)
+
+    # Require both JD and CV before attempting cover letter generation.
+    if not _has_job_and_cv(payload):
+        _LOGGER.info(
+            "langchain_cover_letter_request_blocked",
+            extra={**request_meta, "reason": "missing_jd_or_cv"},
+        )
+        return False, "Please provide both a job description and a CV to generate a cover letter."
+
+    # Validate inputs with the chat limits because history is included.
+    ok, refusal = validate_chat_inputs(
+        payload.job_description, payload.cv_text, payload.user_prompt
+    )
+    if not ok:
+        _LOGGER.info(
+            "langchain_cover_letter_request_blocked",
+            extra={**request_meta, "reason": "input_validation_failed"},
+        )
+        return False, refusal or "Input validation failed."
+
+    # Build the cover letter prompt and call the LangChain chat endpoint.
+    variant = get_cover_letter_prompt()
+    _LOGGER.info(
+        "langchain_cover_letter_prompt_selected",
+        extra={"variant_id": variant.id, "variant_name": variant.name},
+    )
+    messages = build_messages(payload, variant)
+    _LOGGER.info(
+        "langchain_cover_letter_messages_built",
+        extra={
+            "message_count": len(messages),
+            "system_message_length": len(messages[0]["content"]),
+            "user_message_length": len(messages[1]["content"]),
+        },
+    )
+
+    _load_dotenv_once()
+
+    if ChatOpenAI is None:
+        # Defer dependency errors to runtime so tests can still run without LangChain.
+        _LOGGER.error("langchain_client_missing")
+        raise RuntimeError(
+            "LangChain OpenAI client is not installed. "
+            "Install it with `pip install langchain-openai`."
+        )
+
+    # Build the LangChain client with the same model selection logic as the chat app.
+    selected_model = payload.model_name or DEFAULT_MODEL
+    llm_kwargs = _build_llm_kwargs(payload, selected_model)
+    _LOGGER.info(
+        "langchain_cover_letter_request",
         extra={
             "model": selected_model,
             "temperature": payload.temperature if payload.temperature is not None else "default",

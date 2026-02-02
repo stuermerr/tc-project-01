@@ -1,6 +1,10 @@
 """Tests for the controller orchestration layer."""
 
-from app.core.orchestration import generate_chat_response, generate_questions
+from app.core.orchestration import (
+    generate_chat_response,
+    generate_cover_letter_response,
+    generate_questions,
+)
 from app.core.dataclasses import RequestPayload
 
 
@@ -116,3 +120,57 @@ def test_generate_chat_response_returns_text(monkeypatch):
 
     assert ok is True
     assert message == "Coach reply"
+
+
+def test_generate_cover_letter_requires_jd_and_cv(monkeypatch):
+    """Verify cover letter generation requires JD and CV."""
+    # Guard against accidental LLM calls in the refusal path.
+    def _unexpected_call(*args, **kwargs):  # pragma: no cover - should not be called
+        raise AssertionError("LLM should not be called when JD/CV are missing")
+
+    monkeypatch.setattr(
+        "app.core.orchestration.generate_chat_completion", _unexpected_call
+    )
+
+    payload = RequestPayload(
+        job_description="JD",
+        cv_text="",
+        user_prompt="History",
+        prompt_variant_id=101,
+        temperature=0.3,
+    )
+
+    ok, message = generate_cover_letter_response(payload)
+
+    assert ok is False
+    assert "job description" in message
+
+
+def test_generate_cover_letter_success_path(monkeypatch):
+    """Verify cover letter generation success path."""
+    # Allow validation to pass so we can test the happy path.
+    def _pass_validation(job_description: str, cv_text: str, user_prompt: str):
+        return True, None
+
+    # Fake the chat completion to keep the test deterministic.
+    def _fake_chat_completion(messages, temperature, model_name=None, reasoning_effort=None):
+        assert messages
+        return True, "Sehr geehrte Damen und Herren,\n\nTest.\n"
+
+    monkeypatch.setattr("app.core.orchestration.validate_chat_inputs", _pass_validation)
+    monkeypatch.setattr(
+        "app.core.orchestration.generate_chat_completion", _fake_chat_completion
+    )
+
+    payload = RequestPayload(
+        job_description="JD",
+        cv_text="CV",
+        user_prompt="History",
+        prompt_variant_id=101,
+        temperature=0.3,
+    )
+
+    ok, message = generate_cover_letter_response(payload)
+
+    assert ok is True
+    assert "Sehr geehrte" in message

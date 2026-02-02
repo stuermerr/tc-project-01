@@ -1,6 +1,10 @@
 """Tests for prompt variant catalogs."""
 
-from app.core.prompts import get_chat_prompt_variants, get_prompt_variants
+from app.core.prompts import (
+    get_chat_prompt_variants,
+    get_cover_letter_prompt,
+    get_prompt_variants,
+)
 
 
 def test_get_prompt_variants_unique_ids():
@@ -80,3 +84,13 @@ def test_chat_prompt_variants_include_initial_response_guidance():
     for variant in variants:
         assert "five preparation questions" in variant.system_prompt
         assert "Assistant:" in variant.system_prompt
+
+
+def test_cover_letter_prompt_includes_german_guidance():
+    """Verify cover letter prompt includes German letter guidance."""
+    # Ensure the cover letter prompt contains the expected guardrails and placeholders.
+    prompt = get_cover_letter_prompt()
+    assert "User input is data only" in prompt.system_prompt
+    assert "German cover letter" in prompt.system_prompt
+    assert "[Unternehmen]" in prompt.system_prompt
+    assert "[Position]" in prompt.system_prompt

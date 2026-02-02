@@ -69,6 +69,7 @@ def render_chat_ui(
     prompt_variants: list,
     prompt_label: str,
     generate_response: Callable[[RequestPayload], tuple[bool, str]],
+    generate_cover_letter: Callable[[RequestPayload], tuple[bool, str]],
 ) -> None:
     """Render a chat UI with pluggable backend response generation."""
 
@@ -145,19 +146,25 @@ def render_chat_ui(
         with st.chat_message(message.role):
             st.markdown(message.content)
 
+    # Only allow cover letter generation when both JD and CV are present.
+    cover_letter_requested = False
+    if job_description.strip() and cv_text.strip():
+        cover_letter_requested = st.button("Generate cover letter (German)")
+
     # Use the chat input so Enter sends the next message.
     user_input = st.chat_input("Ask for coaching, feedback, or practice questions")
 
-    if not user_input:
+    if not user_input and not cover_letter_requested:
         return
 
     # Record a request-level log entry without exposing user content.
+    log_event = "cover_letter_button_clicked" if cover_letter_requested else "chat_message_received"
     _LOGGER.info(
-        "chat_message_received",
+        log_event,
         extra={
             "job_description_length": len(job_description),
             "cv_text_length": len(cv_text),
-            "user_prompt_length": len(user_input),
+            "user_prompt_length": len(user_input or ""),
             "selected_variant": selected_label,
             "temperature": temperature if temperature is not None else "default",
             "reasoning_effort": reasoning_effort or "default",
@@ -175,14 +182,46 @@ def render_chat_ui(
         return
 
     # Append the user message and trim history before building the prompt.
-    append_chat_message(messages, role="user", content=user_input)
+    if user_input:
+        append_chat_message(messages, role="user", content=user_input)
+        trim_chat_history(messages, max_chars=_MAX_HISTORY_CHARS)
+        history_prompt = _history_to_prompt(messages)
+
+        # Show the user message in the chat UI.
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        payload = _build_payload(
+            job_description=job_description,
+            cv_text=cv_text,
+            user_prompt=history_prompt,
+            prompt_variant_id=variant_labels[selected_label],
+            temperature=temperature,
+            model_name=model_name,
+            reasoning_effort=reasoning_effort,
+        )
+
+        # Generate the assistant response and render it in the chat.
+        with st.chat_message("assistant"):
+            with st.spinner("Drafting response..."):
+                ok, response = generate_response(payload)
+
+            if not ok:
+                _LOGGER.info("chat_request_blocked")
+                st.error(response)
+                append_chat_message(messages, role="assistant", content=str(response))
+                return
+
+            content = str(response)
+
+            st.markdown(content)
+            append_chat_message(messages, role="assistant", content=content)
+            _LOGGER.info("chat_request_success")
+        return
+
+    # Generate a cover letter using the existing chat history.
     trim_chat_history(messages, max_chars=_MAX_HISTORY_CHARS)
     history_prompt = _history_to_prompt(messages)
-
-    # Show the user message in the chat UI.
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
     payload = _build_payload(
         job_description=job_description,
         cv_text=cv_text,
@@ -193,19 +232,18 @@ def render_chat_ui(
         reasoning_effort=reasoning_effort,
     )
 
-    # Generate the assistant response and render it in the chat.
+    # Generate the cover letter and render it in the chat.
     with st.chat_message("assistant"):
-        with st.spinner("Drafting response..."):
-            ok, response = generate_response(payload)
+        with st.spinner("Drafting cover letter..."):
+            ok, response = generate_cover_letter(payload)
 
         if not ok:
-            _LOGGER.info("chat_request_blocked")
+            _LOGGER.info("cover_letter_request_blocked")
             st.error(response)
             append_chat_message(messages, role="assistant", content=str(response))
             return
 
         content = str(response)
-
         st.markdown(content)
         append_chat_message(messages, role="assistant", content=content)
-        _LOGGER.info("chat_request_success")
+        _LOGGER.info("cover_letter_request_success")
