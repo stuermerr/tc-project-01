@@ -47,8 +47,8 @@ def _build_payload(
 def render_langchain_ui() -> None:
     """Render the LangChain single-shot UI without resetting page config."""
 
-    st.title("Interview Practice App (LangChain)")
-    st.caption("Generate tailored interview questions using the LangChain pipeline.")
+    st.title("Interview Practice App")
+    st.caption("Generate tailored interview questions from your JD, CV, and focus areas.")
 
     # Load prompt variants to populate the dropdown.
     variants = get_prompt_variants()
@@ -131,7 +131,7 @@ def render_langchain_ui() -> None:
         # Center the submit button at the bottom of the form.
         _, button_col, _ = st.columns([1, 1, 1])
         generate_clicked = button_col.form_submit_button(
-            "Generate 5 Questions (LangChain)", type="primary"
+            "Generate 5 Questions", type="primary"
         )
 
     st.divider()
@@ -170,7 +170,7 @@ def render_langchain_ui() -> None:
         )
 
         # Show a spinner while the model call runs.
-        with st.spinner("Generating questions via LangChain..."):
+        with st.spinner("Generating questions..."):
             ok, response = generate_langchain_questions(payload)
 
         if not ok:

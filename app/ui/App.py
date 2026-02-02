@@ -1,4 +1,4 @@
-"""Streamlit entrypoint that filters pages by implementation."""
+"""Streamlit entrypoint that shows the LangChain pages only."""
 
 from __future__ import annotations
 
@@ -43,24 +43,10 @@ def _allow_impl_switch() -> bool:
 
 
 def _resolve_impl_mode() -> str:
-    """Choose the implementation mode from env or an optional UI toggle."""
+    """Return the fixed implementation mode for the app."""
 
-    env_mode = _normalize_mode(os.getenv("APP_IMPL", "langchain"))
-    if not _allow_impl_switch():
-        return env_mode
-
-    labels = list(_IMPLEMENTATION_LABELS.values())
-    default_label = _IMPLEMENTATION_LABELS.get(env_mode, labels[0])
-    selected_label = st.sidebar.selectbox(
-        "Implementation view",
-        options=labels,
-        index=labels.index(default_label),
-        help="Control which implementation pages appear in the navigation.",
-    )
-    for key, label in _IMPLEMENTATION_LABELS.items():
-        if label == selected_label:
-            return key
-    return env_mode
+    # Always return the LangChain mode so only the LangChain pages are visible.
+    return "langchain"
 
 
 def main() -> None:
@@ -75,34 +61,19 @@ def main() -> None:
 
     impl_mode = _resolve_impl_mode()
 
-    # Build the navigation list based on the selected implementation mode.
+    # Build the navigation list for the LangChain-only experience.
     pages: list[st.Page] = []
-    if impl_mode in {"openai", "both"}:
-        pages.extend(
-            [
-                st.Page(
-                    str(_BASE_DIR / "openai_chat_app.py"),
-                    title="Interview Preparation Chat (OpenAI API)",
-                    default=(impl_mode == "openai"),
-                ),
-                st.Page(
-                    str(_BASE_DIR / "pages" / "1_OpenAI_Questions_Generator.py"),
-                    title="Interview Questions Generator (OpenAI API)",
-                ),
-            ]
-        )
-
-    if impl_mode in {"langchain", "both"}:
+    if impl_mode == "langchain":
         pages.extend(
             [
                 st.Page(
                     str(_BASE_DIR / "pages" / "2_LangChain_Chat.py"),
-                    title="Interview Preparation Chat (LangChain)",
-                    default=(impl_mode in {"langchain", "both"}),
+                    title="Interview Preparation Chat",
+                    default=True,
                 ),
                 st.Page(
                     str(_BASE_DIR / "pages" / "3_LangChain_Questions_Generator.py"),
-                    title="Interview Questions Generator (LangChain)",
+                    title="Interview Questions Generator",
                 ),
             ]
         )

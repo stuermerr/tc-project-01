@@ -24,6 +24,7 @@ from app.core.safety import (
     validate_inputs,
     validate_output,
 )
+from app.core.structured_output import STRUCTURED_OUTPUT_SCHEMA
 
 _DOTENV_LOADED = False
 
@@ -138,15 +139,25 @@ def _build_langchain_messages(messages: list[dict[str, str]]) -> list[object]:
     ]
 
 
-def _build_llm_kwargs(payload: RequestPayload, selected_model: str) -> dict[str, object]:
+def _build_llm_kwargs(
+    payload: RequestPayload,
+    selected_model: str,
+    response_format: dict[str, object] | None = None,
+) -> dict[str, object]:
     """Build initialization kwargs for the LangChain chat model."""
 
     llm_kwargs: dict[str, object] = {"model": selected_model}
     if payload.temperature is not None and not is_gpt5_model(selected_model):
         llm_kwargs["temperature"] = payload.temperature
+    model_kwargs: dict[str, object] = {}
     reasoning_effort = _resolve_reasoning_effort(selected_model, payload.reasoning_effort)
     if reasoning_effort:
-        llm_kwargs["model_kwargs"] = {"reasoning_effort": reasoning_effort}
+        model_kwargs["reasoning_effort"] = reasoning_effort
+    if response_format:
+        # Match OpenAI structured output enforcement when generating JSON responses.
+        model_kwargs["response_format"] = response_format
+    if model_kwargs:
+        llm_kwargs["model_kwargs"] = model_kwargs
     return llm_kwargs
 
 
@@ -159,6 +170,22 @@ def _extract_response_text(response: object) -> str:
     if isinstance(content, str):
         return content
     return ""
+
+
+def _extract_refusal(response: object) -> str | None:
+    """Extract refusal text from a LangChain response when present."""
+
+    if isinstance(response, str):
+        return None
+    refusal = getattr(response, "refusal", None)
+    if isinstance(refusal, str) and refusal.strip():
+        return refusal.strip()
+    additional_kwargs = getattr(response, "additional_kwargs", None)
+    if isinstance(additional_kwargs, dict):
+        extra_refusal = additional_kwargs.get("refusal")
+        if isinstance(extra_refusal, str) and extra_refusal.strip():
+            return extra_refusal.strip()
+    return None
 
 
 def _sanitize_freeform_output(raw_text: str) -> tuple[bool, str]:
@@ -181,7 +208,10 @@ def _sanitize_freeform_output(raw_text: str) -> tuple[bool, str]:
     return True, sanitized
 
 
-def generate_langchain_completion(payload: RequestPayload) -> tuple[bool, str]:
+def generate_langchain_completion(
+    payload: RequestPayload,
+    response_format: dict[str, object] | None = None,
+) -> tuple[bool, str]:
     """Generate a LangChain completion or return a refusal message."""
 
     request_meta = _payload_metadata(payload)
@@ -226,7 +256,11 @@ def generate_langchain_completion(payload: RequestPayload) -> tuple[bool, str]:
 
     # Build the LangChain client with the same model selection logic as the classic app.
     selected_model = payload.model_name or DEFAULT_MODEL
-    llm_kwargs = _build_llm_kwargs(payload, selected_model)
+    llm_kwargs = _build_llm_kwargs(
+        payload,
+        selected_model,
+        response_format=response_format,
+    )
     _LOGGER.info(
         "langchain_request",
         extra={
@@ -235,12 +269,17 @@ def generate_langchain_completion(payload: RequestPayload) -> tuple[bool, str]:
             "reasoning_effort": payload.reasoning_effort or "default",
             "message_count": len(messages),
             "messages_total_length": sum(len(msg["content"]) for msg in messages),
+            "response_format": "json_schema" if response_format else "text",
         },
     )
     llm = ChatOpenAI(**llm_kwargs)
 
     # Invoke the model and return the raw text.
     response = llm.invoke(_build_langchain_messages(messages))
+    refusal = _extract_refusal(response)
+    if refusal:
+        _LOGGER.info("langchain_refusal")
+        return False, refusal
     return True, _extract_response_text(response)
 
 
@@ -251,7 +290,10 @@ def generate_langchain_questions(
 
     # Start from the same LangChain completion path used in the wrapper.
     llm_start = time.monotonic()
-    ok, raw_text = generate_langchain_completion(payload)
+    ok, raw_text = generate_langchain_completion(
+        payload,
+        response_format={"type": "json_schema", "json_schema": STRUCTURED_OUTPUT_SCHEMA},
+    )
     llm_duration_ms = int((time.monotonic() - llm_start) * 1000)
     _LOGGER.info(
         "langchain_response_received",
@@ -337,6 +379,10 @@ def generate_langchain_chat_response(payload: RequestPayload) -> tuple[bool, str
 
     # Invoke the model and sanitize the free-form response.
     response = llm.invoke(_build_langchain_messages(messages))
+    refusal = _extract_refusal(response)
+    if refusal:
+        _LOGGER.info("langchain_chat_refusal")
+        return False, refusal
     raw_text = _extract_response_text(response)
     ok, sanitized = _sanitize_freeform_output(raw_text)
     if not ok:
@@ -412,6 +458,10 @@ def generate_langchain_cover_letter_response(payload: RequestPayload) -> tuple[b
 
     # Invoke the model and sanitize the free-form response.
     response = llm.invoke(_build_langchain_messages(messages))
+    refusal = _extract_refusal(response)
+    if refusal:
+        _LOGGER.info("langchain_cover_letter_refusal")
+        return False, refusal
     raw_text = _extract_response_text(response)
     ok, sanitized = _sanitize_freeform_output(raw_text)
     if not ok:

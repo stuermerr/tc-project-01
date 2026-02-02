@@ -91,6 +91,10 @@ def test_generate_langchain_questions_parses_structured_json(monkeypatch):
     assert ok is True
     assert isinstance(result, dict)
     assert len(result["interview_questions"]) == 5
+    assert created_clients
+    response_format = created_clients[0].kwargs.get("model_kwargs", {}).get("response_format")
+    assert isinstance(response_format, dict)
+    assert response_format.get("type") == "json_schema"
 
 
 def test_generate_langchain_chat_response_returns_text(monkeypatch):
@@ -146,6 +150,39 @@ def test_generate_langchain_chat_response_does_not_parse_json(monkeypatch):
 
     assert ok is True
     assert result == "plain chat response"
+
+
+def test_generate_langchain_chat_response_handles_refusal(monkeypatch):
+    """Verify LangChain chat wrapper surfaces refusals."""
+    created_clients: list[object] = []
+
+    class _RefusalChatOpenAI:
+        # Minimal stand-in that returns a refusal response.
+        def __init__(self, **kwargs) -> None:
+            created_clients.append(kwargs)
+
+        def invoke(self, messages: list[object]):
+            class _RefusalResponse:
+                def __init__(self) -> None:
+                    self.refusal = "Blocked"
+                    self.content = ""
+
+            return _RefusalResponse()
+
+    monkeypatch.setattr(langchain_client, "ChatOpenAI", _RefusalChatOpenAI)
+
+    payload = RequestPayload(
+        job_description="JD",
+        cv_text="CV",
+        user_prompt="User prompt",
+        prompt_variant_id=101,
+        temperature=0.2,
+    )
+
+    ok, result = langchain_client.generate_langchain_chat_response(payload)
+
+    assert ok is False
+    assert result == "Blocked"
 
 
 def test_generate_langchain_cover_letter_requires_jd_cv(monkeypatch):

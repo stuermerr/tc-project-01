@@ -1,4 +1,4 @@
-"""LangChain single-shot page for the interview practice app."""
+"""Single-shot page for the interview practice app."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ from app.ui.langchain_questions_ui import render_langchain_ui
 
 
 def main() -> None:
-    """Run the LangChain interview questions page."""
+    """Run the interview questions page."""
     # Ensure standard console logging is active before any log calls.
     setup_logging()
-    # Configure the page for the LangChain mode view.
+    # Configure the page for the question generator view.
     st.set_page_config(
-        page_title="Interview Questions Generator (LangChain)",
+        page_title="Interview Questions Generator",
         page_icon="🧩",
         layout="wide",
     )

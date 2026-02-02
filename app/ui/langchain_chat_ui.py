@@ -15,8 +15,8 @@ def render_langchain_chat_ui() -> None:
 
     variants = get_chat_prompt_variants()
     render_chat_ui(
-        page_title="Interview Preparation Chat (LangChain)",
-        caption="Chat with the app using the LangChain backend.",
+        page_title="Interview Preparation Chat",
+        caption="Chat with the app for coaching, feedback, and practice questions.",
         prompt_variants=variants,
         prompt_label="Prompt variant",
         generate_response=generate_langchain_chat_response,

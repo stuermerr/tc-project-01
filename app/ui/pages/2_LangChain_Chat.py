@@ -1,4 +1,4 @@
-"""LangChain chat page for the interview practice app."""
+"""Chat page for the interview practice app."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ from app.ui.langchain_chat_ui import render_langchain_chat_ui
 
 
 def main() -> None:
-    """Run the LangChain chat page."""
+    """Run the chat page."""
     # Ensure standard console logging is active before any log calls.
     setup_logging()
-    # Configure the page for the LangChain chat view.
+    # Configure the page for the chat view.
     st.set_page_config(
-        page_title="Interview Preparation Chat (LangChain)",
+        page_title="Interview Preparation Chat",
         page_icon="🧩",
         layout="wide",
     )
