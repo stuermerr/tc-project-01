@@ -146,10 +146,17 @@ def render_chat_ui(
         with st.chat_message(message.role):
             st.markdown(message.content)
 
-    # Only allow cover letter generation when both JD and CV are present.
-    cover_letter_requested = False
-    if job_description.strip() and cv_text.strip():
-        cover_letter_requested = st.button("Generate cover letter (German)")
+    # Show the cover letter button but disable it until both JD and CV are present.
+    missing_cover_letter_inputs = not (job_description.strip() and cv_text.strip())
+    cover_letter_requested = st.button(
+        "Generate cover letter (German)",
+        disabled=missing_cover_letter_inputs,
+        help=(
+            "Please add both a job description and a CV to generate a cover letter."
+            if missing_cover_letter_inputs
+            else None
+        ),
+    )
 
     # Use the chat input so Enter sends the next message.
     user_input = st.chat_input("Ask for coaching, feedback, or practice questions")
