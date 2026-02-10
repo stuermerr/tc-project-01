@@ -1,56 +1,48 @@
-# 🧩 Interview Practice App (Streamlit + OpenAI + LangChain)
+# Interview Practice App
 
-## ✅ Overview
-- 🎯 Generates exactly 5 interview questions from JD + CV.
-- 🧭 Tailors questions with optional user prompt (focus areas).
-- 💬 Chat mode supports coaching, feedback, and follow-ups.
-- 🧾 Question generator output uses structured JSON rendered as markdown.
-- 🛡️ Safety guard blocks obvious prompt injection, illegal/harmful requests (via OpenAI moderation), and enforces length limits.
-- 🎚️ Model settings: temperature for `gpt-4o-mini`, reasoning effort for GPT-5.
+Streamlit app for interview preparation with:
+- chat coaching and mock interview flow
+- cover letter generation from JD + CV
+- structured interview question generation (exactly 5 questions)
+- response export buttons (`Download Response (PDF)`, `Download Full Chat (PDF)`)
 
-## 🌐 Live app
-- https://tc-project-01git-ydv65ajrftafgtfn8yqe9z.streamlit.app/ (ask for access)
-## 🧰 Tech stack
-- 🖥️ Streamlit
-- 🤖 OpenAI API + LangChain
-- 🧪 pytest
+## Tech Stack
+- Python 3.12+
+- Streamlit
+- OpenAI + LangChain
+- `uv` for dependency and environment management
+- `pytest` for tests
 
-## ⬇️ Clone
+## Setup
+1. Install `uv` (system-wide), then in this repo run:
 ```bash
-git clone https://github.com/TuringCollegeSubmissions/psturm-AE.1.5.git
-cd psturm-AE.1.5
+uv sync
 ```
-
-## 🔐 Environment
-- 🧾 Copy the example file and set your key.
+2. Configure environment variables:
 ```bash
 cp .env.example .env
 ```
-- 🔑 Set `OPENAI_API_KEY=...` inside `.env` for local runs.
-- 🔀 Toggle pages via `.env`: set `APP_IMPL=langchain|openai|both` and/or `ALLOW_IMPL_SWITCH=1`.
-- 🔀 Toggle pages via CLI: `APP_IMPL=both ALLOW_IMPL_SWITCH=1 streamlit run app/ui/App.py`.
-
-## ▶️ Install + run (Option A: Conda)
+3. Add your API key in `.env`:
 ```bash
-conda env create -f environment.yml
-conda activate tc
-streamlit run app/ui/App.py
+OPENAI_API_KEY=...
 ```
 
-## ▶️ Install + run (Option B: venv)
+## Run
+Use the Streamlit entrypoint with `run`:
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app/ui/App.py
+uv run streamlit run app/ui/App.py
 ```
 
-## 🧪 Tests
-- ✅ Conda:
+The app currently serves the LangChain experience with two pages:
+- `Interview Preparation Chat`
+- `Interview Questions Generator`
+
+## Tests
 ```bash
-conda run -n tc pytest -q
+uv run pytest -q
 ```
-- ✅ venv:
-```bash
-pytest -q
-```
+
+## Notes
+- PDF exports are rendered from markdown using `markdown-pdf`.
+- If you see `No such command 'app/ui/App.py'`, the command is missing `run`.
+  Use: `uv run streamlit run app/ui/App.py`.
