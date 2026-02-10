@@ -12,7 +12,8 @@ def test_get_allowed_models_returns_expected_list():
 
 def test_default_model_is_in_catalog():
     """Verify default model is in catalog."""
-    # Confirm the default model remains part of the allowed list.
+    # Confirm the default model is the intended GPT-5.2 option and is selectable.
+    assert DEFAULT_MODEL == "gpt-5.2-chat-latest"
     assert DEFAULT_MODEL in get_allowed_models()
 
 

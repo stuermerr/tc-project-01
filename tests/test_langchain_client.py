@@ -185,6 +185,94 @@ def test_generate_langchain_chat_response_handles_refusal(monkeypatch):
     assert result == "Blocked"
 
 
+def test_generate_langchain_chat_response_uses_selected_variant(monkeypatch):
+    """Verify LangChain chat wrapper uses the requested prompt variant id."""
+    created_clients: list[_DummyChatOpenAI] = []
+    _DummyChatOpenAI.next_response = "chat reply"
+    captured_variant_ids: list[int] = []
+
+    def _factory(**kwargs):
+        return _DummyChatOpenAI(created_clients, **kwargs)
+
+    def _build_messages(payload, variant):
+        captured_variant_ids.append(variant.id)
+        return [
+            {"role": "system", "content": "system"},
+            {"role": "user", "content": payload.user_prompt},
+        ]
+
+    monkeypatch.setattr(langchain_client, "ChatOpenAI", _factory)
+    monkeypatch.setattr(langchain_client, "build_messages", _build_messages)
+
+    payload = RequestPayload(
+        job_description="JD",
+        cv_text="CV",
+        user_prompt="User prompt",
+        prompt_variant_id=102,
+        temperature=0.2,
+    )
+
+    ok, result = langchain_client.generate_langchain_chat_response(payload)
+
+    assert ok is True
+    assert result == "chat reply"
+    assert captured_variant_ids == [102]
+
+
+def test_generate_langchain_chat_response_uses_selected_model_settings(monkeypatch):
+    """Verify LangChain chat wrapper applies per-request model settings."""
+    created_clients: list[_DummyChatOpenAI] = []
+    _DummyChatOpenAI.next_response = "chat reply"
+
+    def _factory(**kwargs):
+        return _DummyChatOpenAI(created_clients, **kwargs)
+
+    monkeypatch.setattr(langchain_client, "ChatOpenAI", _factory)
+
+    payload = RequestPayload(
+        job_description="JD",
+        cv_text="CV",
+        user_prompt="User prompt",
+        prompt_variant_id=101,
+        temperature=None,
+        model_name="gpt-5-nano",
+        reasoning_effort="high",
+    )
+
+    ok, result = langchain_client.generate_langchain_chat_response(payload)
+
+    assert ok is True
+    assert result == "chat reply"
+    assert created_clients
+    client_kwargs = created_clients[0].kwargs
+    assert client_kwargs["model"] == "gpt-5-nano"
+    assert client_kwargs.get("model_kwargs", {}).get("reasoning_effort") == "high"
+
+
+def test_generate_langchain_chat_summary_returns_text(monkeypatch):
+    """Verify LangChain chat summary wrapper returns plain text."""
+    created_clients: list[_DummyChatOpenAI] = []
+    _DummyChatOpenAI.next_response = "summary reply"
+
+    def _factory(**kwargs):
+        return _DummyChatOpenAI(created_clients, **kwargs)
+
+    monkeypatch.setattr(langchain_client, "ChatOpenAI", _factory)
+
+    payload = RequestPayload(
+        job_description="JD",
+        cv_text="CV",
+        user_prompt="User: hello\nAssistant: hi",
+        prompt_variant_id=101,
+        temperature=0.2,
+    )
+
+    ok, result = langchain_client.generate_langchain_chat_summary(payload)
+
+    assert ok is True
+    assert result == "summary reply"
+
+
 def test_generate_langchain_cover_letter_requires_jd_cv(monkeypatch):
     """Verify LangChain cover letter generation requires JD and CV."""
     # Guard against accidental LLM calls in the refusal path.

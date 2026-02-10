@@ -9,8 +9,8 @@ ALLOWED_MODELS: list[str] = [
     "gpt-5.2-chat-latest",
 ]
 
-# Default remains the same as the current app behavior.
-DEFAULT_MODEL = ALLOWED_MODELS[0]
+# Default to GPT-5.2 chat for the landing-page experience.
+DEFAULT_MODEL = "gpt-5.2-chat-latest"
 GPT5_MODELS = {"gpt-5-nano", "gpt-5.2-chat-latest"}
 _REASONING_EFFORT_BY_MODEL = {
     "gpt-5-nano": ["minimal", "low", "medium", "high"],

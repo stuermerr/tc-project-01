@@ -65,14 +65,18 @@ def test_generate_completion_builds_payload(monkeypatch):
     ]
 
     # Call the wrapper and capture the result.
-    ok, result = openai_client.generate_completion(messages, temperature=0.4)
+    ok, result = openai_client.generate_completion(
+        messages,
+        temperature=0.4,
+        model_name="gpt-4o-mini",
+    )
 
     # Assert both return value and payload fields.
     assert ok is True
     assert result == "mocked-response"
     assert len(created_clients) == 1
     last_kwargs = created_clients[0].chat.completions.last_kwargs
-    assert last_kwargs["model"] == openai_client.DEFAULT_MODEL
+    assert last_kwargs["model"] == "gpt-4o-mini"
     assert last_kwargs["messages"] == messages
     assert last_kwargs["temperature"] == 0.4
     assert last_kwargs["response_format"]["type"] == "json_schema"

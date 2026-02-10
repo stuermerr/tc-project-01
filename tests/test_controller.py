@@ -2,6 +2,7 @@
 
 from app.core.orchestration import (
     generate_chat_response,
+    generate_chat_summary_response,
     generate_cover_letter_response,
     generate_questions,
 )
@@ -174,3 +175,33 @@ def test_generate_cover_letter_success_path(monkeypatch):
 
     assert ok is True
     assert "Sehr geehrte" in message
+
+
+def test_generate_chat_summary_success_path(monkeypatch):
+    """Verify chat summary generation success path."""
+    # Allow validation to pass so we can test the summary flow.
+    def _pass_validation(job_description: str, cv_text: str, user_prompt: str):
+        return True, None
+
+    # Fake the chat completion to keep the test deterministic.
+    def _fake_chat_completion(messages, temperature, model_name=None, reasoning_effort=None):
+        assert messages
+        return True, "## Summary\n- Key point"
+
+    monkeypatch.setattr("app.core.orchestration.validate_chat_inputs", _pass_validation)
+    monkeypatch.setattr(
+        "app.core.orchestration.generate_chat_completion", _fake_chat_completion
+    )
+
+    payload = RequestPayload(
+        job_description="JD",
+        cv_text="CV",
+        user_prompt="User: hello\nAssistant: hi",
+        prompt_variant_id=101,
+        temperature=0.3,
+    )
+
+    ok, message = generate_chat_summary_response(payload)
+
+    assert ok is True
+    assert "Summary" in message

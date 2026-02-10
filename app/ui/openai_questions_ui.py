@@ -16,7 +16,12 @@ from app.core.model_catalog import (
     is_gpt5_model,
 )
 from app.core.orchestration import generate_questions
-from app.core.prompts import get_prompt_variants
+from app.core.prompts import (
+    DEFAULT_PROMPT_VARIANT_ID,
+    get_prompt_variant_description,
+    get_prompt_variant_display_name,
+    get_prompt_variants,
+)
 from app.core.safety import check_rate_limit
 from app.core.structured_output import render_markdown_from_response
 
@@ -52,8 +57,22 @@ def render_classic_ui() -> None:
 
     # Load prompt variants to populate the dropdown.
     variants = get_prompt_variants()
-    # Map labels to ids so the UI stays readable while the payload stays numeric.
-    variant_labels = {variant.name: variant.id for variant in variants}
+    # Build clear user-facing labels while keeping stable numeric IDs in payloads.
+    variant_options: list[tuple[str, int]] = []
+    for variant in variants:
+        variant_options.append(
+            (
+                get_prompt_variant_display_name(variant.id, variant.name),
+                variant.id,
+            )
+        )
+    variant_labels = {label: variant_id for label, variant_id in variant_options}
+    variant_ids = [variant_id for _, variant_id in variant_options]
+    default_variant_index = (
+        variant_ids.index(DEFAULT_PROMPT_VARIANT_ID)
+        if DEFAULT_PROMPT_VARIANT_ID in variant_ids
+        else 0
+    )
 
     # Load the supported model list so the UI stays in sync with the backend.
     allowed_models = get_allowed_models()
@@ -88,9 +107,15 @@ def render_classic_ui() -> None:
         with settings_left:
             # Prompt variant stays visible next to the model selector.
             selected_label = st.selectbox(
-                "Prompt variant",
-                options=list(variant_labels.keys()),
+                "Interview style",
+                options=[label for label, _ in variant_options],
+                index=default_variant_index,
             )
+            selected_variant_id = variant_labels[selected_label]
+            # Keep a short explanation near the selector to clarify each mode.
+            variant_description = get_prompt_variant_description(selected_variant_id)
+            if variant_description:
+                st.caption(variant_description)
         with settings_mid:
             if model_name == "gpt-5.2-chat-latest":
                 # GPT-5.2 chat-latest uses default settings (no user tuning).
@@ -144,6 +169,7 @@ def render_classic_ui() -> None:
                 "cv_text_length": len(cv_text),
                 "user_prompt_length": len(user_prompt),
                 "selected_variant": selected_label,
+                "selected_variant_id": selected_variant_id,
                 "temperature": temperature if temperature is not None else "default",
                 "reasoning_effort": reasoning_effort or "default",
                 "model_name": model_name,
@@ -163,7 +189,7 @@ def render_classic_ui() -> None:
             job_description=job_description,
             cv_text=cv_text,
             user_prompt=user_prompt,
-            prompt_variant_id=variant_labels[selected_label],
+            prompt_variant_id=selected_variant_id,
             temperature=temperature,
             model_name=model_name,
             reasoning_effort=reasoning_effort,

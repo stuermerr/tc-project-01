@@ -31,6 +31,7 @@ def test_append_chat_message_preserves_order():
 
     assert [message.role for message in messages] == ["user", "assistant"]
     assert [message.content for message in messages] == ["First", "Second"]
+    assert [message.message_type for message in messages] == ["chat", "chat"]
 
 
 def test_trim_chat_history_enforces_max_chars():

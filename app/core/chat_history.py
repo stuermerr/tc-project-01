@@ -14,6 +14,7 @@ class ChatMessage:
 
     role: str
     content: str
+    message_type: str = "chat"
 
 
 def init_chat_history(state: dict) -> list[ChatMessage]:
@@ -26,11 +27,16 @@ def init_chat_history(state: dict) -> list[ChatMessage]:
     return state[_STATE_KEY]
 
 
-def append_chat_message(messages: list[ChatMessage], role: str, content: str) -> None:
+def append_chat_message(
+    messages: list[ChatMessage],
+    role: str,
+    content: str,
+    message_type: str = "chat",
+) -> None:
     """Append a new chat message while preserving order."""
 
     # Keep order stable by always appending to the end of the list.
-    messages.append(ChatMessage(role=role, content=content))
+    messages.append(ChatMessage(role=role, content=content, message_type=message_type))
 
 
 def trim_chat_history(messages: list[ChatMessage], max_chars: int) -> None:

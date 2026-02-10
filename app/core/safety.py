@@ -249,6 +249,7 @@ def _validate_inputs_with_limits(
     cv_text: str,
     user_prompt: str,
     user_prompt_limit: int,
+    policy_user_prompt: str | None = None,
 ) -> tuple[bool, str | None]:
     """Validate inputs against the provided user prompt length limit."""
 
@@ -273,8 +274,13 @@ def _validate_inputs_with_limits(
             )
             return False, message
 
+    # Allow callers to provide a reduced prompt view for policy checks.
+    checked_user_prompt = (
+        policy_user_prompt if policy_user_prompt is not None else user_prompt
+    )
+
     # Check combined inputs so cross-field instructions are still caught.
-    combined = "\n".join([job_description, cv_text, user_prompt])
+    combined = "\n".join([job_description, cv_text, checked_user_prompt])
     if _matches_injection(combined):
         record_safety_event("input_injection_detected")
         return False, (
@@ -286,7 +292,7 @@ def _validate_inputs_with_limits(
     for label, text in (
         ("Job description", job_description),
         ("CV", cv_text),
-        ("User prompt", user_prompt),
+        ("User prompt", checked_user_prompt),
     ):
         if _matches_illegal_or_harmful(text):
             record_safety_event("input_illegal_or_harmful", {"field": label})
@@ -323,6 +329,38 @@ def validate_chat_inputs(
 ) -> tuple[bool, str | None]:
     """Validate chat inputs with a larger user prompt limit."""
 
+    # Chat history contains both user and assistant turns. Policy checks should use only user turns
+    # to avoid false positives from assistant phrasing (e.g., "act as" in coaching text).
+    checked_prompt = _extract_user_turns_from_transcript(user_prompt)
     return _validate_inputs_with_limits(
-        job_description, cv_text, user_prompt, MAX_CHAT_USER_PROMPT_LENGTH
+        job_description,
+        cv_text,
+        user_prompt,
+        MAX_CHAT_USER_PROMPT_LENGTH,
+        policy_user_prompt=checked_prompt,
     )
+
+
+def _extract_user_turns_from_transcript(user_prompt: str) -> str:
+    """Return only user-authored text when prompt contains a serialized transcript."""
+
+    lines = user_prompt.splitlines()
+    user_lines: list[str] = []
+    saw_role_prefix = False
+    current_role: str | None = None
+    for line in lines:
+        if line.startswith("User:"):
+            saw_role_prefix = True
+            current_role = "user"
+            user_lines.append(line.partition(":")[2].lstrip())
+            continue
+        if line.startswith("Assistant:"):
+            saw_role_prefix = True
+            current_role = "assistant"
+            continue
+        if current_role == "user":
+            user_lines.append(line)
+    # Fall back to the original prompt when no transcript markers are present.
+    if not saw_role_prefix:
+        return user_prompt
+    return "\n".join(user_lines).strip()

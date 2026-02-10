@@ -11,6 +11,7 @@ from app.core.llm.openai_client import generate_chat_completion, generate_comple
 from app.core.prompt_builder import build_messages
 from app.core.prompts import (
     get_chat_prompt_variants,
+    get_chat_summary_prompt,
     get_cover_letter_prompt,
     get_prompt_variants,
 )
@@ -328,6 +329,63 @@ def generate_cover_letter_response(payload: RequestPayload) -> tuple[bool, str]:
     )
     if not ok:
         _LOGGER.info("cover_letter_llm_refusal")
+        return False, raw_text
+
+    ok, sanitized = _sanitize_freeform_output(raw_text)
+    if not ok:
+        return False, sanitized
+    return True, sanitized
+
+
+def generate_chat_summary_response(payload: RequestPayload) -> tuple[bool, str]:
+    """Generate a concise summary of the current chat transcript."""
+
+    request_meta = _payload_metadata(payload)
+    _LOGGER.info("chat_summary_request_received", extra=request_meta)
+
+    # Validate inputs with chat limits because transcript history is included.
+    ok, refusal = validate_chat_inputs(
+        payload.job_description, payload.cv_text, payload.user_prompt
+    )
+    if not ok:
+        _LOGGER.info(
+            "chat_summary_request_blocked",
+            extra={**request_meta, "reason": "input_validation_failed"},
+        )
+        return False, refusal or "Input validation failed."
+
+    # Build the summary prompt and call the chat completion endpoint.
+    variant = get_chat_summary_prompt()
+    _LOGGER.info(
+        "chat_summary_prompt_selected",
+        extra={"variant_id": variant.id, "variant_name": variant.name},
+    )
+    messages = build_messages(payload, variant)
+    _LOGGER.info(
+        "chat_summary_messages_built",
+        extra={
+            "message_count": len(messages),
+            "system_message_length": len(messages[0]["content"]),
+            "user_message_length": len(messages[1]["content"]),
+        },
+    )
+    llm_start = time.monotonic()
+    ok, raw_text = generate_chat_completion(
+        messages,
+        payload.temperature,
+        model_name=payload.model_name,
+        reasoning_effort=payload.reasoning_effort,
+    )
+    llm_duration_ms = int((time.monotonic() - llm_start) * 1000)
+    _LOGGER.info(
+        "chat_summary_llm_response_received",
+        extra={
+            "duration_ms": llm_duration_ms,
+            "raw_text_length": len(raw_text),
+        },
+    )
+    if not ok:
+        _LOGGER.info("chat_summary_llm_refusal")
         return False, raw_text
 
     ok, sanitized = _sanitize_freeform_output(raw_text)
