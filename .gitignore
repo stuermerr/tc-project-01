@@ -15,6 +15,9 @@ ruff_cache/
 # mac/windows
 .DS_Store
 Thumbs.db
+._.DS_Store
+.uv-bin/
+app/._.DS_Store
 
 # logs
 *.log
