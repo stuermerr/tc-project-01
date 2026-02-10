@@ -7,6 +7,9 @@ Streamlit app for interview preparation with:
 - ❓ Structured interview question generation (exactly 5 questions)
 - 📄 Response export buttons (`Download Response (PDF)`, `Download Full Chat (PDF)`)
 
+## 🌐 Live app
+- https://tc-project-01git-ydv65ajrftafgtfn8yqe9z.streamlit.app/ (ask for access)
+
 ## 🧰 Tech Stack
 - 🐍 Python 3.12+
 - 🖥️ Streamlit
