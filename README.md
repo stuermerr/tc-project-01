@@ -42,8 +42,3 @@ The app currently serves the LangChain experience with two pages:
 ```bash
 uv run pytest -q
 ```
-
-## 📝 Notes
-- 📄 PDF exports are rendered from markdown using `markdown-pdf`.
-- ⚠️ If you see `No such command 'app/ui/App.py'`, the command is missing `run`.
-  Use: `uv run streamlit run app/ui/App.py`.
