@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 import streamlit as st
@@ -12,6 +13,11 @@ try:
     from dotenv import load_dotenv
 except ImportError:  # pragma: no cover - optional dependency
     load_dotenv = None
+
+# Ensure repo root is importable in cloud runners where cwd is not project root.
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 from app.core.logging_config import setup_logging
 
